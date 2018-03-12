@@ -1,0 +1,9 @@
+{
+  "CheckInterval": 5,
+  "logFile": "",
+  "registry": "dock:14",
+  "nodes": {},
+  "apps": {},
+  "binds": {},
+  "privateKey": "-----BEGIN RSA PRIVATE KEY-----,....,....,....,-----END RSA PRIVATE KEY-----"
+}

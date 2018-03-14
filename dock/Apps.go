@@ -5,6 +5,7 @@ import (
 	"strings"
 	"strconv"
 	"log"
+	"github.com/ssgo/base"
 )
 
 const RUNNING = 1
@@ -13,6 +14,7 @@ const STOPPING = 2
 type AppRunInfo struct {
 	Node   string
 	Id     string
+	Name   string
 	Image  string
 	UpTime string
 }
@@ -32,6 +34,7 @@ func (app *AppInfo) String() string {
 }
 
 var apps = map[string]*AppInfo{}
+var restartingAppNameMaps = map[string]string{}
 
 func updateAppsInfo() bool {
 	changed := false
@@ -49,12 +52,13 @@ func updateAppsInfo() bool {
 		if apps[appName] != nil {
 			if apps[appName].Status == STOPPING {
 				apps[appName].Status = RUNNING
+				changed = true
+				continue
 			}
-			continue
 		}
 
 		a := strings.SplitN(appString, ",", 5)
-		if len(a) < 3 {
+		if len(a) < 5 {
 			continue
 		}
 		cpu, err1 := strconv.ParseFloat(a[0], 10)
@@ -66,13 +70,38 @@ func updateAppsInfo() bool {
 		}
 		args := a[4]
 
-		log.Printf("Dock	apps	add	%s	%s", appName, appString)
+		app := &AppInfo{Status: RUNNING, Cpu: float32(cpu), Memory: float32(memory), Min: min, Max: max, Args: args, Runs: make([]*AppRunInfo, 0)}
+		if apps[appName] != nil {
+			if apps[appName].String() == app.String() {
+				continue
+			}else{
+				// 内容发生变化
+				log.Printf("Dock	apps	update	%s	%s => %s", appName, apps[appName].String(), appString)
+
+				var prevAppName string
+				if strings.IndexByte(appName, '#') == -1 {
+					prevAppName = appName+"#stoping"+strconv.Itoa(base.Rander.Intn(999))
+				} else {
+					prevAppName = appName+"-stoping"+strconv.Itoa(base.Rander.Intn(999))
+				}
+				restartingAppNameMaps[appName] = prevAppName
+				apps[prevAppName] = apps[appName]
+				apps[prevAppName].Status = STOPPING
+			}
+		}else{
+			log.Printf("Dock	apps	add	%s	%s", appName, appString)
+		}
+
 		changed = true
-		apps[appName] = &AppInfo{Status: RUNNING, Cpu: float32(cpu), Memory: float32(memory), Min: min, Max: max, Args: args, Runs: make([]*AppRunInfo, 0)}
+		apps[appName] = app
 	}
 
 	// 检查是否有需要删除的应用
 	for appName, app := range apps {
+		if apps[appName].Status == STOPPING {
+			continue
+		}
+
 		if remoteApps[appName] == "" {
 			log.Printf("Dock	apps	remove	%s	%s", appName, app.String())
 			changed = true

@@ -7,14 +7,14 @@ import (
 	"strconv"
 )
 
+// TODO docker stop start 之后出现错误
+// TODO stop 时间长
+
 type Stats struct {
 	Nodes map[string]*NodeInfo
 	Apps  map[string]*AppInfo
 }
 
-// TODO redis 中的配置没有覆盖 config
-// TODO 支持 镜像别名（区分不同实例使用不通配置）
-// TODO 支持 docker 启动脚本（redis slave）
 func makeAppRunningInfo() {
 	// 重置运行信息
 	for _, app := range apps {
@@ -27,6 +27,10 @@ func makeAppRunningInfo() {
 		node.UsedMemory = 0
 		for _, run := range getRunningApps(nodeName) {
 			app := apps[run.Image]
+			if restartingAppNameMaps[run.Image] != "" {
+				// 正在重启，运行信息加入到重命名的旧应用
+				app = apps[restartingAppNameMaps[run.Image]]
+			}
 			if app != nil {
 				node.UsedCpu += app.Cpu
 				node.UsedMemory += app.Memory

@@ -2,6 +2,8 @@
   "CheckInterval": 5,
   "logFile": "",
   "registry": "dock:14",
+  "accessToken": "51dock",
+  "managerToken": "91dock",
   "nodes": {},
   "apps": {},
   "binds": {},

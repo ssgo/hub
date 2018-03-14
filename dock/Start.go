@@ -18,6 +18,8 @@ var config = struct {
 	CheckInterval  int
 	ReviewInterval int
 	LogFile        string
+	AccessToken    string
+	ManagerToken   string
 	Nodes          map[string]*string
 	Apps           map[string]*string
 	Binds          map[string]*string
@@ -67,7 +69,7 @@ func initConfig() {
 		config.Registry = "dock:14"
 	}
 	if config.PrivateKey != "" {
-		f, err := os.OpenFile("/opt/privateKey", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
+		f, err := os.OpenFile("/opt/privateKey", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 		if err == nil {
 			f.Write([]byte(strings.Replace(config.PrivateKey, ",", "\n", 100)))
 			f.Close()
@@ -89,9 +91,13 @@ func Start() {
 		log.Print("Dock	stopping ...")
 		isRunning = false
 		if syncConn != nil {
+			log.Print("Dock	stopping noitce syncer ...")
 			syncConn.Unsubscribe("_refresh")
 			syncConn.Close()
 			syncConn = nil
+			log.Print("Dock	stopped noitce syncer")
+		} else {
+			log.Print("Dock	stop without noitce syncer")
 		}
 	}()
 
@@ -112,6 +118,7 @@ func Start() {
 		// 更新应用，产生 startingApps stoppingApps
 		appChanged := updateAppsInfo()
 
+		//log.Printf("Dock	checking	nodes: %d	apps: %d", len(nodes), len(apps))
 		// 变化了或者到了 config.ReviewInterval 执行一次 review
 		if nodeChanged || appChanged || reviewInterval >= config.ReviewInterval {
 			// 获取实时运行状态
@@ -124,6 +131,9 @@ func Start() {
 				// 打印当前状态
 				showStats()
 			}
+			//else {
+			//	log.Printf("Dock	noChanged	nodes: %d	apps: %d", len(nodes), len(apps))
+			//}
 		}
 		if reviewInterval >= config.ReviewInterval {
 			reviewInterval = 0
@@ -177,10 +187,14 @@ func AsyncStop() {
 }
 
 func syncNotice() {
+	inited := false
 	for {
 		syncConn = &redigo.PubSubConn{Conn: dcCache.GetConnection()}
 		err := syncConn.Subscribe("_refresh")
-		syncerStartChan <- true
+		if !inited {
+			inited = true
+			syncerStartChan <- true
+		}
 		if err != nil {
 			log.Print("REDIS SUBSCRIBE	", err)
 			syncConn.Close()
@@ -196,6 +210,9 @@ func syncNotice() {
 		// 开始接收订阅数据
 		for {
 			isErr := false
+			if syncConn == nil || !isRunning{
+				break
+			}
 			switch v := syncConn.Receive().(type) {
 			case redigo.Message:
 				isRefresh = true

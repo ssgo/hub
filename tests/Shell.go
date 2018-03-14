@@ -6,12 +6,16 @@ import (
 	"strings"
 )
 
+type RunInfo struct{
+	Name string
+	Image string
+}
 var sequences = map[string]int{}
-var runs = map[string]map[string]string{}
+var runs = map[string]map[string]*RunInfo{}
 
 func testShell(nodeName string, args ...string) string {
 	if runs[nodeName] == nil {
-		runs[nodeName] = map[string]string{}
+		runs[nodeName] = make(map[string]*RunInfo)
 	}
 
 	if args[0] == "run" {
@@ -20,21 +24,21 @@ func testShell(nodeName string, args ...string) string {
 		}
 		sequences[nodeName]++
 		id := fmt.Sprintf("%s<%.2d>", nodeName, sequences[nodeName])
-		runs[nodeName][id] = args[len(args)-1]
+		runs[nodeName][id] = &RunInfo{Image:args[len(args)-1], Name:args[2]}
 		return id
 	}
 	if args[0] == "ps" {
 		lines := make([]string, 0)
-		for id, image := range runs[nodeName] {
-			lines = append(lines, id+", "+image+", Up 1 minutes")
+		for id, run := range runs[nodeName] {
+			lines = append(lines, id+", "+run.Name+", "+run.Image+", Up 1 minutes")
 		}
 		return strings.Join(lines, "\n")
 	}
 	if args[0] == "stop" {
+		delete(runs[nodeName], args[1])
 		return args[1]
 	}
 	if args[0] == "rm" {
-		delete(runs[nodeName], args[1])
 		return args[1]
 	}
 	return ""

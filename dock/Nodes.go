@@ -4,6 +4,7 @@ import (
 	"strings"
 	"strconv"
 	"log"
+	"fmt"
 )
 
 type NodeInfo struct {
@@ -11,6 +12,23 @@ type NodeInfo struct {
 	TotalMemory float32
 	UsedCpu     float32
 	UsedMemory  float32
+}
+
+func (node *NodeInfo) String() string {
+	return fmt.Sprintf("%.2f,%.2f", node.TotalCpu, node.TotalMemory)
+}
+
+func NewNode(nodeString string) *NodeInfo {
+	a := strings.Split(nodeString, ",")
+	if len(a) < 2 {
+		return nil
+	}
+	cpu, err1 := strconv.ParseFloat(a[0], 10)
+	memory, err2 := strconv.ParseFloat(a[1], 10)
+	if err1 != nil || err2 != nil {
+		return nil
+	}
+	return &NodeInfo{TotalCpu: float32(cpu), TotalMemory: float32(memory)}
 }
 
 var nodes = map[string]*NodeInfo{}
@@ -26,27 +44,27 @@ func updateNodesInfo() bool {
 	dcCache.Do("HGETALL", "_nodes").To(&remoteNodes)
 
 	for nodeName, nodeString := range remoteNodes {
-		if nodes[nodeName] != nil {
+		node := NewNode(nodeString)
+		if node == nil {
 			continue
 		}
+
+		if nodes[nodeName] != nil && nodes[nodeName].String() == node.String() {
+			continue
+		}
+
 		// 失败超过5次的节点自动忽略
 		if nodeFailedTimes[nodeName] >= 5 {
 			continue
 		}
 
-		a := strings.Split(nodeString, ",")
-		if len(a) < 2 {
-			continue
+		if nodes[nodeName] != nil {
+			log.Printf("Dock	nodes	update	%s	%s => %s", nodeName, nodes[nodeName].String(), nodeString)
+		} else {
+			log.Printf("Dock	nodes	add	%s	%s", nodeName, nodeString)
 		}
-		cpu, err1 := strconv.ParseFloat(a[0], 10)
-		memory, err2 := strconv.ParseFloat(a[1], 10)
-		if err1 != nil || err2 != nil {
-			continue
-		}
-
-		log.Printf("Dock	nodes	add	%s	%s", nodeName, nodeString)
 		changed = true
-		nodes[nodeName] = &NodeInfo{TotalCpu: float32(cpu), TotalMemory: float32(memory)}
+		nodes[nodeName] = node
 	}
 
 	for nodeName, node := range nodes {

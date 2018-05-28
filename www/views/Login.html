@@ -1,0 +1,18 @@
+<div style="width:300px;margin: 100px auto;">
+    <div class="panel panel-default" align="center">
+        <div class="panel-heading">
+            <h3 class="panel-title">Access</h3>
+        </div>
+        <div class="panel-body">
+            <form onsubmit="$this.login();return false">
+                <div class="form-group">
+                    <input bind="data.token" type="text" class="form-control" placeholder="Token">
+                </div>
+                <button
+                        class="btn btn-default" style="width:100px;">Auth
+                </button>
+            </form>
+            {data.error}
+        </div>
+    </div>
+</div>

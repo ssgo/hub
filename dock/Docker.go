@@ -9,18 +9,20 @@ import (
 
 var nodeFailedTimes = map[string]int{}
 var dockerNameFilter *regexp.Regexp
+var dockerVarReplacer *regexp.Regexp
 
-func getRunningApps(nodeName string) []*AppRunInfo {
-	runs := make([]*AppRunInfo, 0)
+func getRunningApps(nodeName string) []*AppStatus {
+	runs := make([]*AppStatus, 0)
 	out := shellFunc(nodeName, "ps", "--format", "'{{.ID}}, {{.Names}}, {{.Image}}, {{.Status}}'")
+	//log.Println("	******	", out)
 	for _, line := range strings.Split(out, "\n") {
 		a1 := strings.Split(line, ", ")
 		if len(a1) >= 4 {
-			run := &AppRunInfo{Node: nodeName, Id: a1[0], Name: a1[1], Image: a1[2], UpTime: a1[3]}
+			a2 := strings.Split(a1[1], "-")
+			run := &AppStatus{Ctx: a2[0], Node: nodeName, Id: a1[0], Name: a1[1], Image: a1[2], UpTime: a1[3]}
 			// 通过 --name 中隐藏的 tag 信息补全 Image
-			a2 := strings.Split(run.Name, "-")
-			if len(a2) >= 3 {
-				run.Image += "#" + a2[1]
+			if len(a2) >= 4 {
+				run.Image += "#" + a2[2]
 			}
 			runs = append(runs, run)
 		}
@@ -28,9 +30,17 @@ func getRunningApps(nodeName string) []*AppRunInfo {
 	return runs
 }
 
-func startApp(appName, nodeName string, app *AppInfo) string {
+func startApp(ctxName, appName, nodeName string, app *AppInfo) (string, string) {
+	ctx := ctxs[ctxName]
+	if ctx == nil {
+		return "", ""
+	}
+
 	if dockerNameFilter == nil {
-		dockerNameFilter, _ = regexp.Compile("[^a-zA-Z0-9]")
+		dockerNameFilter = regexp.MustCompile("[^a-zA-Z0-9]")
+	}
+	if dockerVarReplacer == nil {
+		dockerVarReplacer = regexp.MustCompile("\\${[a-zA-Z0-9._-]+}")
 	}
 
 	// 解析后缀
@@ -53,8 +63,8 @@ func startApp(appName, nodeName string, app *AppInfo) string {
 	if postfix != "" {
 		dockerRunName += "-" + postfix
 	}
-	dockerRunIndex := dcCache.HINCR("_appIndexes", dockerRunName)
-	dockerRunName = fmt.Sprintf("%s-%d", dockerRunName, dockerRunIndex)
+	dockerRunIndex := incr(dockerRunName)
+	dockerRunName = fmt.Sprintf("%s-%s-%d", ctxName, dockerRunName, dockerRunIndex)
 
 	args := make([]string, 0)
 	args = append(args, "run", "--name", dockerRunName, "-d", "--restart=always")
@@ -67,46 +77,55 @@ func startApp(appName, nodeName string, app *AppInfo) string {
 		args = append(args, "-m", fmt.Sprintf("%.0fm", app.Memory*1024))
 	}
 
+	// 替换变量
+	tmpArgs := app.Args
+	tmpArgs = dockerVarReplacer.ReplaceAllStringFunc(tmpArgs, func(varName string) string {
+		s := ctx.Vars[varName[2:len(varName)-1]]
+		if s != nil {
+			return *s
+		}
+		return ""
+	})
+
 	// 解析启动参数
 	runCmd := ""
-	if strings.HasSuffix(app.Args, ">") {
-		pos := strings.LastIndex(app.Args, " <")
+	if strings.HasSuffix(tmpArgs, ">") {
+		pos := strings.LastIndex(tmpArgs, " <")
 		if pos != -1 {
-			runCmd = app.Args[pos+2:len(app.Args)-1]
-			app.Args = app.Args[0:pos]
+			runCmd = tmpArgs[pos+2:len(tmpArgs)-1]
+			tmpArgs = tmpArgs[0:pos]
 		}
 	}
 
-	args = append(args, strings.Split(app.Args, " ")...)
+	args = append(args, strings.Split(tmpArgs, " ")...)
 	args = append(args, appName)
 	if runCmd != "" {
 		args = append(args, strings.Split(runCmd, " ")...)
 	}
-	log.Print("Dock	exec	run	", "docker ", strings.Join(args, " "))
+	log.Print("Dock	exec	run	[", ctxName, "]	\033[32mdocker ", strings.Join(args, " "), "\033[0m")
 	id := getLastLine(shellFunc(nodeName, args...))
 	if len(id) > 12 {
 		id = id[0:12]
 	}
-	log.Print("Dock	exec	run	result	", id)
-	return id
+	log.Print("Dock	exec	run	[", ctxName, "]	result	", id)
+	return id, dockerRunName
 }
 
-func stopApp(run *AppRunInfo, app *AppInfo) bool {
+func stopApp(ctxName string, run *AppStatus) bool {
 	if run.Id == "" {
 		return true
 	}
 
 	ok := true
-	log.Println("Dock	exec	stop	", "docker", run.Node, "stop", run.Id)
+	log.Printf("Dock	exec	[%s]	%s	%s	\033[31mdocker stop %s\033[0m", ctxName, run.Image, run.Node, run.Id)
 	if out := getLastLine(shellFunc(run.Node, "stop", run.Id)); out != run.Id {
-		log.Printf("Dock	exec	stop	error	%s	!=	%s", out, run.Id)
+		log.Printf("Dock	exec	stop	[%s]	error	%s	!=	%s", ctxName, out, run.Id)
 		ok = false
 	}
 
-	log.Println("Dock	exec	rm	", "docker", run.Node, "rm", run.Id)
+	log.Printf("Dock	exec	[%s]	%s	%s	\033[31mdocker rm %s\033[0m", ctxName, run.Image, run.Node, run.Id)
 	if out := getLastLine(shellFunc(run.Node, "rm", run.Id)); out != run.Id {
-		log.Printf("Dock	exec	rm	error	%s	!=	%s", out, run.Id)
-		ok = false
+		log.Printf("Dock	exec	[%s]	rm	error	%s	!=	%s", ctxName, out, run.Id)
 	}
 	return ok
 }

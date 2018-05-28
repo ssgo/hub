@@ -6,9 +6,9 @@ import (
 	"strings"
 )
 
-var shellFunc func (nodeName string, args ...string) (out string)
+var shellFunc func(nodeName string, args ...string) (out string)
 
-func SetShell(shell func (nodeName string, args ...string) (out string)){
+func SetShell(shell func(nodeName string, args ...string) (out string)) {
 	shellFunc = shell
 }
 
@@ -19,7 +19,7 @@ func defaultShell(nodeName string, args ...string) string {
 		sshHost = a[0]
 		if len(a) > 1 {
 			sshPort = a[1]
-		}else{
+		} else {
 			sshPort = "22"
 		}
 	}
@@ -31,12 +31,13 @@ func defaultShell(nodeName string, args ...string) string {
 	sshArgs = append(sshArgs, args...)
 	cmd := exec.Command("ssh", sshArgs...)
 	bytes, err := cmd.Output()
+
 	if err != nil {
 		log.Print("Dock	exec error	", err.Error(), "	times: ", nodeFailedTimes[nodeName])
 		nodeFailedTimes[nodeName] ++
 		//if nodeFailedTimes[nodeName] >= 5 {
 		//	log.Print("Dock	remove bad Node	", nodeName)
-			//dcCache.HDEL("_nodes", nodeName)
+		//cc.HDEL("_nodes", nodeName)
 		//}
 		return ""
 	}

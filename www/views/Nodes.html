@@ -1,0 +1,48 @@
+<div if="data.authLevel>=2" class="saveBox">
+    <button if="data.changed" class="btn btn-primary" onclick="$this.save();">Save</button>
+</div>
+
+<div class="fullBox">
+    <table class="table table-condensed table-hover">
+        <thead>
+        <tr>
+            <th>Name</th>
+            <th>Total Cpu</th>
+            <th>Total Mem (G)</th>
+            <th align="center" class="hidden-xs">Used Cpu</th>
+            <th align="center" class="hidden-xs">Used Mem</th>
+            <th align="center" class="hidden-xs">Apps</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr each="data.nodes" class="test {item.changed&&'danger'}">
+            <td>
+                <input if="data.editMode" type="text" class="form-control" placeholder="Name" bind="item.name"
+                       onbind="$this.check(event, 'nodes',{index})">
+                <span if="!data.editMode">{item.name}</span>
+            </td>
+            <td>
+                <input if="data.editMode" type="text" class="form-control" placeholder="CPU" bind="item.cpu"
+                       onbind="$this.check(event, 'nodes',{index})" {data.editMode!==true?'disabled':''}>
+                <span if="!data.editMode">{item.cpu}</span>
+            </td>
+            <td>
+                <input if="data.editMode" type="text" class="form-control" placeholder="Mem" bind="item.memory"
+                       onbind="$this.check(event, 'nodes',{index})" {data.editMode!==true?'disabled':''}>
+                <span if="!data.editMode">{item.memory}</span>
+            </td>
+            <td align="center" class="hidden-xs usedCpu_{index}">
+                <span>{item.usedCpu}</span>
+            </td>
+            <td align="center" class="hidden-xs usedMemory_{index}">
+                <span>{item.usedMemory}</span>
+            </td>
+            <td align="center" class="hidden-xs totalRuns_{index}">
+                <span>{item.totalRuns}</span>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <span class="text-muted" style="padding-left: 10px">clear the name than save for remove a node</span>
+</div>

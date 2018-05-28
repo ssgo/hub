@@ -1,0 +1,153 @@
+<div if="data.authLevel>=2" class="saveBox">
+    <button if="data.changed" class="btn btn-primary" onclick="$this.save();">Save</button>
+</div>
+
+<div class="fullBox">
+
+    <h3 class="sub-header">Apps<span class="text-muted" style="font-size:14px;margin-left:10px">can set tag after image with "#", for example: "mysql/mysql-server:5.7#A, if setting changed can set a different tag to apply"</span>
+    </h3>
+    <div class="table-responsive">
+        <table class="table table-condensed table-hover">
+            <thead>
+            <tr>
+                <th width="20%">Image</th>
+                <th width="5%">Cpu</th>
+                <th width="5%">Mem</th>
+                <th width="5%">Min</th>
+                <th width="5%">Max</th>
+                <th>Args</th>
+                <th width="10%">Command</th>
+                <th width="10%">Memo</th>
+                <th width="3%">✓</th>
+            </tr>
+            </thead>
+            <tbody each="data.apps">
+            <tr class="test {item.changed&&'danger'}" align="center">
+                <td>
+                    <input if="data.editMode" type="text" class="form-control" placeholder="Name" bind="item.name"
+                           onbind="$this.check(event, 'apps',{index})">
+                    <span if="!data.editMode"><b>{item.name}</b></span>
+                </td>
+                <td>
+                    <input if="data.editMode" type="text" class="form-control" placeholder="CPU" bind="item.cpu"
+                           onbind="$this.check(event, 'apps',{index})">
+                    <span if="!data.editMode">{item.cpu}</span>
+                </td>
+                <td>
+                    <input if="data.editMode" type="text" class="form-control" placeholder="Mem" bind="item.memory"
+                           onbind="$this.check(event, 'apps',{index})">
+                    <span if="!data.editMode">{item.memory}</span>
+                </td>
+                <td>
+                    <input if="data.editMode" type="text" class="form-control" placeholder="Min" bind="item.min"
+                           onbind="$this.check(event, 'apps',{index})">
+                    <span if="!data.editMode">{item.min}</span>
+                </td>
+                <td>
+                    <input if="data.editMode" type="text" class="form-control" placeholder="Max" bind="item.max"
+                           onbind="$this.check(event, 'apps',{index})">
+                    <span if="!data.editMode">{item.max}</span>
+                </td>
+                <td>
+                    <input if="data.editMode" type="text" class="form-control" placeholder="Docker Args" bind="item.args"
+                           onbind="$this.check(event, 'apps',{index})">
+                    <span if="!data.editMode">{item.args}</span>
+                </td>
+                <td>
+                    <input if="data.editMode" type="text" class="form-control" placeholder="Command" bind="item.command"
+                           onbind="$this.check(event, 'apps',{index})">
+                    <span if="!data.editMode">{item.command}</span>
+                </td>
+                <td>
+                    <input if="data.editMode" type="text" class="form-control" placeholder="Memo" bind="item.memo"
+                           onbind="$this.check(event, 'apps',{index})">
+                    <span if="!data.editMode">{item.memo}</span>
+                </td>
+                <td>
+                    <input if="data.editMode" type="checkbox" class="form-control" bind="item.active"
+                           onbind="$this.check(event, 'apps',{index})">
+                    <span if="!data.editMode" style="color:{item.active?'#090':'#f66'}">●</span>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="9" class="status_box_{index}" style="padding-left:8px;font-size:14px;border:none">
+                    <div each="index2,item2 in item.runs" class="pull-left" style="min-width:250px">
+                        <span class="text-danger">{parseInt(index2)+1}</span>
+                        <span class="text-primary" style="cursor:copy" onclick="document.execCommand('copy')" onmouseover="var range=document.createRange();range.selectNode(this);window.getSelection().addRange(range);" onmouseout="window.getSelection().empty();" title="click to copy">{item2.node}{item2.isBind?'*':''}</span>
+                        <span class="text-primary" style="cursor:copy" onclick="document.execCommand('copy')" onmouseover="var range=document.createRange();range.selectNode(this);window.getSelection().addRange(range);" onmouseout="window.getSelection().empty();" title="click to copy">{item2.name}</span>
+                        <span class="text-muted">{item2.showUpTime}</span>
+                    </div>
+                    <div if="!item.runs" class="text-muted">No runs</div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3 class="sub-header">Vars<span class="text-muted" style="font-size:14px;margin-left:10px">var can use "${varname} in app args", for example: "-p 8001:80 ${redis_conn} -e 'SNAME=abc'"</span>
+    </h3>
+    <div class="table-responsive">
+        <table class="table table-condensed table-hover">
+            <thead>
+            <tr>
+                <th width="30%">Key</th>
+                <th>Value</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr each="data.vars" class="test {item.changed&&'danger'}">
+                <td>
+                    <input if="data.editMode" type="text" class="form-control" placeholder="Name" bind="item.name"
+                           onbind="$this.check(event, 'vars',{index})">
+                    <span if="!data.editMode">{item.name}</span>
+                </td>
+                <td>
+                    <input if="data.editMode" type="text" class="form-control" placeholder="Value" bind="item.value"
+                           onbind="$this.check(event, 'vars',{index})">
+                    <span if="!data.editMode">{item.value}</span>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3 class="sub-header">Binds <span class="text-muted" style="font-size:14px;margin-left:10px">multiple nodes use "," to divide, for example: 192.168.100.1,192.168.100.2,192.168.100.3</span>
+    </h3>
+    <div class="table-responsive">
+        <table class="table table-condensed table-hover">
+            <thead>
+            <tr>
+                <th width="30%">App</th>
+                <th>Nodes</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr each="data.binds" class="test {item.changed&&'danger'}">
+                <td>
+                    <input if="data.editMode" type="text" class="form-control" placeholder="Name" bind="item.name"
+                           onbind="$this.check(event, 'binds',{index})">
+                    <span if="!data.editMode">{item.name}</span>
+                </td>
+                <td>
+                    <input if="data.editMode" type="text" class="form-control" placeholder="Value" bind="item.value"
+                           onbind="$this.check(event, 'binds',{index})">
+                    <span if="!data.editMode">{item.value}</span>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3 class="sub-header">Memo</h3>
+    <div style="padding:5px">
+        <textarea if="data.editMode" style="width:100%;height:80px" bind="data.desc"
+                  onBind="$this.setData({changed: true})"></textarea>
+        <span if="!data.editMode">{data.desc}</span>
+    </div>
+
+    <div align="center">
+        <br/>
+        <button if="data.editMode" class="btn btn-danger" onclick="$this.remove();">Remove</button>
+        <br/>
+    </div>
+</div>

@@ -1,195 +1,452 @@
 package dock
 
 import (
-	"log"
 	"strings"
 	"fmt"
 	"strconv"
+	"log"
+	"github.com/ssgo/base"
 )
 
-// TODO docker stop start 之后出现错误
-// TODO stop 时间长
-
-type Stats struct {
-	Nodes map[string]*NodeInfo
-	Apps  map[string]*AppInfo
-}
-
-func makeAppRunningInfo() {
+func makeAppRunningInfos(isAll bool) {
 	// 重置运行信息
-	for _, app := range apps {
-		app.Runs = make([]*AppRunInfo, 0)
+	var makingNodes map[string]*NodeInfo
+	var makingNodeStatus map[string]*NodeStatus
+	if isAll {
+		makingNodes = map[string]*NodeInfo{}
+		for nodeName, node := range stoppingNodes {
+			makingNodes[nodeName] = node
+		}
+		for nodeName, node := range nodes {
+			makingNodes[nodeName] = node
+		}
+		makingNodeStatus = nodeStatus
+		ctxRuns = map[string]map[string][]*AppStatus{}
+	} else {
+		makingNodes = stoppingNodes
+		makingNodeStatus = stoppingNodeStatus
 	}
 
-	// 更新 Node.UsedCpu、Node.UsedMemory、app.Runs 信息
-	for nodeName, node := range nodes {
-		node.UsedCpu = 0
-		node.UsedMemory = 0
-		for _, run := range getRunningApps(nodeName) {
-			app := apps[run.Image]
-			if restartingAppNameMaps[run.Image] != "" {
-				// 正在重启，运行信息加入到重命名的旧应用
-				app = apps[restartingAppNameMaps[run.Image]]
+	// 更新 Node.UsedCpu、Node.UsedMemory、runs 信息
+	for nodeName := range makingNodes {
+		nodeStat := NodeStatus{UsedCpu: 0, UsedMemory: 0}
+		for _, running := range getRunningApps(nodeName) {
+			ctx := ctxs[running.Ctx]
+			if ctx == nil {
+				continue
 			}
-			if app != nil {
-				node.UsedCpu += app.Cpu
-				node.UsedMemory += app.Memory
-				app.Runs = append(app.Runs, run)
+
+			// 初始化ctxRuns
+			runsByApp := ctxRuns[running.Ctx]
+			if runsByApp == nil {
+				runsByApp = map[string][]*AppStatus{}
+				ctxRuns[running.Ctx] = runsByApp
 			}
-		}
-	}
-}
 
-func checkApps() bool {
-	changed := false
-
-	// 启动需要的App
-	for appName, app := range apps {
-		avaliableBinds := map[string]int{}
-		appendBinds := make([]string, 0)
-		for _, b := range app.Binds {
-			avaliableBinds[b] ++
-		}
-
-		if len(avaliableBinds) > 0 && len(app.Runs) > 0 {
-			for _, run := range app.Runs {
-				if avaliableBinds[run.Node] > 0 {
-					// 抵消已经分配的
-					avaliableBinds[run.Node] --
-					if avaliableBinds[run.Node] <= 0 {
-						delete(avaliableBinds, run.Node)
-					}
-				} else {
-					// 将未绑定的信息添加到 _binds
-					appendBinds = append(appendBinds, run.Node)
+			// 删除的应用，进入停止队列
+			app := ctx.Apps[running.Image]
+			if app == nil {
+				if stoppingCtxApps[running.Ctx] == nil {
+					stoppingCtxApps[running.Ctx] = make(map[string]*AppInfo)
+				}
+				stoppingApps := stoppingCtxApps[running.Ctx]
+				if stoppingApps[running.Image] != nil {
+					// 正在重启，运行信息加入到重命名的旧应用
+					app = stoppingApps[running.Image]
+				}
+				if app == nil {
+					continue
 				}
 			}
-		}
 
-		for i := len(app.Runs); i < app.Min; i++ {
-			// 如果有绑定节点优先使用
-			nodeName := ""
-			if len(avaliableBinds) > 0 {
-				for tmpNodeName := range avaliableBinds {
-					if avaliableBinds[tmpNodeName] > 0 {
-						avaliableBinds[tmpNodeName] --
-						nodeName = tmpNodeName
-					}
+			// 存入 runs
+			runs := runsByApp[running.Image]
+			if runs == nil {
+				runs = make([]*AppStatus, 0)
+			}
+			// stoppingNodes 里面 未绑定部分不在本次处理范畴
+			isStoppingInBinds := false
+			if nodes[running.Node] == nil && stoppingNodes[running.Node] != nil {
+				isStoppingInBinds = ctx.Binds[running.Image] != nil && !findIn(ctx.Binds[running.Image], running.Node)
+			}
+
+			if (isAll && isStoppingInBinds) || (!isAll && !isStoppingInBinds) {
+				continue
+			}
+			// 更新信息
+			nodeStat.TotalRuns ++
+			nodeStat.UsedCpu += app.Cpu
+			nodeStat.UsedMemory += app.Memory
+			runs = append(runs, running)
+			runsByApp[running.Image] = runs
+		}
+		makingNodeStatus[nodeName] = &nodeStat
+	}
+}
+
+func checkContext(ctxName string) bool {
+	changed := false
+	ctx := ctxs[ctxName]
+	runsByApp := ctxRuns[ctxName]
+	if ctx == nil {
+		return false
+	}
+	if runsByApp == nil {
+		runsByApp = map[string][]*AppStatus{}
+		ctxRuns[ctxName] = runsByApp
+	}
+
+	// 启动需要的App
+	for appName := range ctx.Apps {
+		if checkAppForStart(ctxName, appName) {
+			changed = true
+		}
+	}
+
+	for appName := range runsByApp {
+		if checkAppForStop(ctxName, appName) {
+			changed = true
+		}
+	}
+
+	//// 清除多余的绑定信息
+	//for appName := range ctx.Binds {
+	//	if ctx.Apps[appName] != nil {
+	//		delete(ctx.Binds, appName)
+	//		save(ctxName, ctx)
+	//	}
+	//}
+
+	// TODO 根据实际负债情况进行弹性伸缩
+
+	return changed
+}
+
+func checkAppForStart(ctxName, appName string) bool {
+
+	changed := false
+	ctx := ctxs[ctxName]
+	runsByApp := ctxRuns[ctxName]
+	if ctx == nil || runsByApp == nil {
+		return false
+	}
+
+	app := ctx.Apps[appName]
+	runs := runsByApp[appName]
+	if app == nil || app.Active == false {
+		return false
+	}
+
+	if runs == nil {
+		runs = make([]*AppStatus, 0)
+		runsByApp[appName] = runs
+	}
+
+	avaliableBinds := map[string]int{}
+	appendBinds := make([]string, 0)
+
+	if ctx.Binds[appName] != nil {
+		for _, b := range ctx.Binds[appName] {
+			avaliableBinds[b] ++
+		}
+	}
+
+	if len(avaliableBinds) > 0 && len(runs) > 0 {
+		for _, run := range runs {
+			if avaliableBinds[run.Node] > 0 {
+				run.IsBind = true
+				// 抵消已经分配的
+				avaliableBinds[run.Node] --
+				if avaliableBinds[run.Node] <= 0 {
+					delete(avaliableBinds, run.Node)
+				}
+			} else {
+				// 将未绑定的信息添加到 _ctx.Binds
+				appendBinds = append(appendBinds, run.Node)
+			}
+		}
+	}
+
+	for i := len(runs); i < app.Min; i++ {
+		// 如果有绑定节点优先使用
+		nodeName := ""
+		isBind := false
+		if len(avaliableBinds) > 0 {
+			for tmpNodeName := range avaliableBinds {
+				if avaliableBinds[tmpNodeName] > 0 {
+					avaliableBinds[tmpNodeName] --
+					nodeName = tmpNodeName
 					if avaliableBinds[tmpNodeName] <= 0 {
 						delete(avaliableBinds, tmpNodeName)
 					}
 					if nodeName != "" {
+						isBind = true
 						break
 					}
 				}
 			}
+		}
 
-			// 没有绑定，使用得分最低的一个节点
+		// 没有绑定，使用得分最低的一个节点
+		if nodeName == "" {
+			nodeName = nextMinScoreNode(ctxName, appName)
+			// 无节点可用
 			if nodeName == "" {
-				nodeName = nextMinScoreNode(app)
-				// 无节点可用
-				if nodeName == "" {
-					break
-				}
-
-				// 挂载了磁盘的应用，将其绑定在该节点上
-				if strings.Index(app.Args, " -v ") != -1 || strings.Index(app.Args, " --volume ") != -1 {
-					appendBinds = append(appendBinds, nodeName)
-				}
+				break
 			}
 
-			id := startApp(appName, nodeName, app)
+			// 挂载了磁盘的应用，将其绑定在该节点上
+			if strings.Index(app.Args, " -v ") != -1 || strings.Index(app.Args, " --volume ") != -1 {
+				appendBinds = append(appendBinds, nodeName)
+			}
+		}
+
+		var id, runName string
+		if nodes[nodeName] != nil {
+			// 不存在了的节点不执行
+			id, runName = startApp(ctxName, appName, nodeName, app)
 			changed = true
-
-			// 启动失败的 App，暂时占着坑，下次会重新尝试启动
-			run := AppRunInfo{Node: nodeName, Id: id, Image: appName, UpTime: "Up 0 hours"}
-			node := nodes[nodeName]
-			if node != nil {
-				node.UsedCpu += app.Cpu
-				node.UsedMemory += app.Memory
-			}
-			app.Runs = append(app.Runs, &run)
 		}
 
-		// 保存增加的绑定信息
-		if len(appendBinds) > 0 {
-			dcCache.HSET("_binds", appName, strings.Join(append(app.Binds, appendBinds...), ","))
+		// 启动失败的 App，暂时占着坑，下次会重新尝试启动
+		run := AppStatus{Name: runName, Ctx: ctxName, Node: nodeName, Id: id, Image: appName, UpTime: "Up 0 minutes", Cpu: app.Cpu, Memory: app.Memory, IsBind: isBind}
+		nodeStat := nodeStatus[nodeName]
+		if nodeStat != nil {
+			nodeStat.TotalRuns ++
+			nodeStat.UsedCpu += app.Cpu
+			nodeStat.UsedMemory += app.Memory
 		}
+		runs = append(runs, &run)
+		runsByApp[appName] = runs
 	}
 
-	for appName, app := range apps {
-		//if app.Status == RUNNING {
-		//	// 停掉多余的App
-		//	if len(app.Runs) > app.Max {
-		//		for i := len(app.Runs)-1; i >= app.Max; i-- {
-		//			changed = true
-		//			if stopApp(app.Runs[i], app) {
-		//				app.Runs[i].Id = ""
-		//			}
-		//		}
-		//	}
-		//} else
-		if app.Status == STOPPING {
-			changed = true
-			// 停掉已经不需要的App
-			allDone := true
-			for _, run := range app.Runs {
-				if stopApp(run, app) == false {
+	// 保存增加的绑定信息
+	if len(appendBinds) > 0 {
+		if ctx.Binds[appName] == nil {
+			ctx.Binds[appName] = make([]string, 0)
+		}
+		ctx.Binds[appName] = append(ctx.Binds[appName], appendBinds...)
+	}
+	return changed
+}
+
+func checkAppForStop(ctxName, appName string) bool {
+	ctx := ctxs[ctxName]
+	runsByApp := ctxRuns[ctxName]
+	if ctx == nil || runsByApp == nil {
+		return false
+	}
+	stoppingApps := stoppingCtxApps[ctxName]
+
+	app := ctx.Apps[appName]
+	runs := runsByApp[appName]
+	changed := false
+
+	if app == nil || app.Active == false {
+		changed = true
+		// 停掉已经不需要的App
+		allDone := true
+		i := 0
+		if runs != nil {
+			leftRuns := make([]*AppStatus, 0)
+			for _, run := range runs {
+				i++
+				if stopApp(ctxName, run) == false {
 					// 停止失败，后续会再次尝试
 					allDone = false
+					leftRuns = append(leftRuns, run)
 				} else {
 					// 停止成功
-					node := nodes[run.Node]
-					if node != nil {
-						node.UsedCpu -= app.Cpu
-						node.UsedMemory -= app.Memory
+					nodeStat := nodeStatus[run.Node]
+					if nodeStat != nil {
+						nodeStat.TotalRuns --
+						nodeStat.UsedCpu -= run.Cpu
+						nodeStat.UsedMemory -= run.Memory
 					}
 				}
 			}
-			if allDone {
-				delete(apps, appName)
+			runsByApp[appName] = leftRuns
+		}
+
+		if allDone {
+			if app == nil {
+				delete(runsByApp, appName)
+			}
+			if stoppingApps != nil && stoppingApps[appName] != nil {
+				delete(stoppingApps, appName)
+			}
+		}
+	} else {
+		// 停掉多余的App
+		if len(runs) > app.Max {
+			for i := len(runs) - 1; i >= app.Max; i-- {
+				changed = true
+				if stopApp(ctxName, runs[i]) {
+					runs[i].Id = ""
+				}
 			}
 		}
 	}
-
-	// TODO 根据实际负债情况进行弹性伸缩
 	return changed
+}
+
+func checkAppForStoppingNodes(ctxName, appName string) bool {
+	ctx := ctxs[ctxName]
+	runsByApp := ctxRuns[ctxName]
+	if ctx == nil || runsByApp == nil {
+		return false
+	}
+
+	changed := false
+	runs := runsByApp[appName]
+	if runs != nil {
+		leftRuns := make([]*AppStatus, 0)
+		for _, run := range runs {
+			if nodes[run.Node] == nil && stoppingNodes[run.Node] != nil && !strings.Contains(strings.Join(ctx.Binds[appName], " ")+" ", run.Node+" ") {
+				if stopApp(ctxName, run) == false {
+					// 停止失败，后续会再次尝试
+					leftRuns = append(leftRuns, run)
+				} else {
+					// 停止成功
+					nodeStat := stoppingNodeStatus[run.Node]
+					if nodeStat != nil {
+						nodeStat.TotalRuns --
+						nodeStat.UsedCpu -= run.Cpu
+						nodeStat.UsedMemory -= run.Memory
+					}
+				}
+			} else {
+				// 正常的实例
+				leftRuns = append(leftRuns, run)
+			}
+		}
+		runsByApp[appName] = leftRuns
+	}
+
+	return changed
+}
+
+func nextMinScoreNode(ctxName, appName string) string {
+	ctx := ctxs[ctxName]
+	runsByApp := ctxRuns[ctxName]
+	if ctx == nil || runsByApp == nil {
+		return ""
+	}
+
+	app := ctx.Apps[appName]
+	runs := runsByApp[appName]
+	if app == nil || runs == nil {
+		return ""
+	}
+
+	var minScore float32 = -1
+	minNodeName := ""
+	for nodeName, node := range nodes {
+		nodeStat := nodeStatus[nodeName]
+		if nodeStat == nil {
+			continue
+		}
+		score := nodeStat.UsedMemory/node.Memory + nodeStat.UsedCpu/node.Cpu
+		for _, run := range runs {
+			// 已经有过的节点得分 +1，优先考虑平均分布
+			if run.Node == nodeName {
+				if strings.Index(app.Args, " -v ") != -1 || strings.Index(app.Args, " --volume ") != -1 {
+					// 挂载磁盘的，尽可能的分布到不同节点，增加 10000% 权重
+					score += 100
+				} else {
+					if app.Min <= 2 {
+						// 2个节点 强平均分配，增加 300% 权重
+						score += 3
+					} else if app.Min <= 4 {
+						// 3~4个节点 较强平均分配，增加 150% 权重
+						score += 1.5
+					} else if app.Min <= 6 {
+						// 5~6个节点 略强平均分配，增加 80% 权重
+						score += 0.8
+					} else {
+						// 7个及以上节点 弱平均分配，增加 30% 权重
+						score += 0.3
+					}
+				}
+			}
+		}
+		if minScore < 0 || score < minScore {
+			minScore = score
+			minNodeName = nodeName
+		}
+	}
+	return minNodeName
 }
 
 func showStats() {
 	outs := make([]string, 0)
-	outs = append(outs, "### Nodes")
 	maxNodeNameLen := -1
 	for nodeName, _ := range nodes {
 		if maxNodeNameLen == -1 || len(nodeName) > maxNodeNameLen {
 			maxNodeNameLen = len(nodeName)
 		}
 	}
-	for nodeName, Node := range nodes {
-		outs = append(outs, fmt.Sprintf("   %"+strconv.Itoa(maxNodeNameLen)+"s   %.2f / %.2f   %.2f / %.2f", nodeName, Node.UsedCpu, Node.TotalCpu, Node.UsedMemory, Node.TotalMemory))
-	}
-	log.Print(strings.Join(outs, "\n"))
+	//b, _ := json.MarshalIndent(nodeStatus, "", "  ")
+	//log.Println("	==========2	", string(b))
 
-	outs = make([]string, 0)
-	outs = append(outs, "### Apps")
-	maxAppNameLen := -1
-	for appName, _ := range apps {
-		if maxAppNameLen == -1 || len(appName) > maxAppNameLen {
-			maxAppNameLen = len(appName)
+	outs = append(outs, fmt.Sprintf(">>  \033[7m[%s]\033[0m", "Nodes"))
+	for nodeName, node := range nodes {
+		nodeStat := nodeStatus[nodeName]
+		if nodeStat == nil {
+			continue
+		}
+		outs = append(outs, fmt.Sprintf(">>    %"+strconv.Itoa(maxNodeNameLen)+"s  %d  %.2f / %.2f  %.2f / %.2f", nodeName, nodeStat.TotalRuns, nodeStat.UsedCpu, node.Cpu, nodeStat.UsedMemory, node.Memory))
+	}
+
+	for ctxName, ctx := range ctxs {
+		runsByApp := ctxRuns[ctxName]
+		if ctx == nil || runsByApp == nil {
+			continue
+		}
+		maxNameLen := -1
+		for appName := range ctx.Apps {
+			if maxNameLen == -1 || len(appName) > maxNameLen {
+				maxNameLen = len(appName)
+			}
+		}
+		for varName := range ctx.Vars {
+			if maxNameLen == -1 || len(varName)+1 > maxNameLen {
+				maxNameLen = len(varName) + 1
+			}
+		}
+		for bindName := range ctx.Binds {
+			if maxNameLen == -1 || len(bindName)+1 > maxNameLen {
+				maxNameLen = len(bindName) + 1
+			}
+		}
+
+		outs = append(outs, fmt.Sprintf(">>  \n>>  \033[7m[%s]\033[0m", ctxName))
+		for varName, varValue := range ctx.Vars {
+			outs = append(outs, fmt.Sprintf(">>    \033[33m$%-"+strconv.Itoa(maxNameLen-1)+"s\033[0m  %s", varName, *varValue))
+		}
+		for bindName, bindValues := range ctx.Binds {
+			outs = append(outs, fmt.Sprintf(">>    *%-"+strconv.Itoa(maxNameLen-1)+"s  %s", bindName, strings.Join(bindValues, ",")))
+		}
+		for appName, app := range ctx.Apps {
+			runs := runsByApp[appName]
+			if runs == nil {
+				continue
+			}
+			outs = append(outs, fmt.Sprintf(">>    \033[36m%-"+strconv.Itoa(maxNameLen)+"s\033[0m  %d (%d ~ %d)  %.2f, %.2f  %s  %s	%s", appName, len(runs), app.Min, app.Max, app.Cpu, app.Memory, app.Args, app.Command, app.Memo))
+			for _, run := range runs {
+				outs = append(outs, fmt.Sprintf(">>      \033[36m%10s\033[0m  %12s  %"+strconv.Itoa(maxNodeNameLen)+"s%s  %s", run.Name, run.Id, run.Node, base.StringIf(run.IsBind, "*", ""), run.UpTime))
+			}
 		}
 	}
 
-	for appName, app := range apps {
-		outs = append(outs, fmt.Sprintf("   %"+strconv.Itoa(maxAppNameLen)+"s   %d (%d ~ %d)	 %.2f, %.2f", appName, len(app.Runs), app.Min, app.Max, app.Cpu, app.Memory))
-		for i, run := range app.Runs {
-			outs = append(outs, fmt.Sprintf("      %2d   %12s   %"+strconv.Itoa(maxNodeNameLen)+"s   %s", i+1, run.Id, run.Node, run.UpTime))
-		}
-	}
-	log.Print(strings.Join(outs, "\n"))
-	//out, _ := json.MarshalIndent(GetStats(), "", "  ")
-	//log.Print(string(out))
+	log.Print("Status\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n>>  \n", strings.Join(outs, "\n"), "\n>>  \n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n")
 }
 
-func GetStats() Stats {
-	return Stats{Nodes: nodes, Apps: apps}
+func findIn(arr []string, str string) bool {
+	for _, s := range arr {
+		if s == str {
+			return true
+		}
+	}
+	return false
 }

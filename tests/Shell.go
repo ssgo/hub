@@ -2,7 +2,6 @@ package tests
 
 import (
 	"fmt"
-	"../dock"
 	"strings"
 )
 
@@ -13,18 +12,21 @@ type RunInfo struct{
 var sequences = map[string]int{}
 var runs = map[string]map[string]*RunInfo{}
 
-func testShell(nodeName string, args ...string) string {
+func TestShell(nodeName string, args ...string) string {
 	if runs[nodeName] == nil {
 		runs[nodeName] = make(map[string]*RunInfo)
 	}
 
 	if args[0] == "run" {
-		if dock.GetStats().Nodes[nodeName] == nil {
-			return ""
-		}
+		//if dock.GetStats().Nodes[nodeName] == nil {
+		//	return ""
+		//}
 		sequences[nodeName]++
 		id := fmt.Sprintf("%s<%.2d>", nodeName, sequences[nodeName])
 		runs[nodeName][id] = &RunInfo{Image:args[len(args)-1], Name:args[2]}
+		if runs[nodeName][id].Image == "xxx" {
+			runs[nodeName][id].Image = args[len(args)-2]
+		}
 		return id
 	}
 	if args[0] == "ps" {

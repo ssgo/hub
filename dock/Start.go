@@ -1,8 +1,6 @@
 package dock
 
 import (
-	redigo "github.com/garyburd/redigo/redis"
-	"github.com/ssgo/redis"
 	"log"
 	"time"
 	"os"
@@ -10,31 +8,26 @@ import (
 	"os/signal"
 	"syscall"
 	"strings"
+	"io/ioutil"
+	"sync"
+	"crypto/sha1"
+	"encoding/hex"
 )
 
-var dcCache *redis.Redis
-
 var config = struct {
-	CheckInterval  int
-	ReviewInterval int
-	LogFile        string
-	AccessToken    string
-	ManagerToken   string
-	Nodes          map[string]*string
-	Apps           map[string]*string
-	Binds          map[string]*string
-	Registry       string
-	PrivateKey     string
+	CheckInterval int
+	DataPath      string
+	LogFile       string
+	AccessToken   string
+	ManageToken   string
+	PrivateKey    string
 }{}
 
 var sleepUnit = time.Second
 var isRunning = false
-var isRefresh = true
-var syncConn *redigo.PubSubConn
+//var isMaking = false
+var makingLocker sync.Mutex
 
-var syncerStartChan = make(chan bool)
-var syncerStopChan = make(chan bool)
-var pingStopChan = make(chan bool)
 var startChan chan bool
 var stopChan chan bool
 
@@ -58,15 +51,11 @@ func initConfig() {
 		log.SetOutput(os.Stdout)
 	}
 
-	if config.CheckInterval < 3 {
+	if config.CheckInterval == 0 {
 		config.CheckInterval = 5
 	}
-
-	if config.ReviewInterval < 10 {
-		config.ReviewInterval = 30
-	}
-	if config.Registry == "" {
-		config.Registry = "dock:14"
+	if config.DataPath == "" {
+		config.DataPath = "/opt/data"
 	}
 	if config.PrivateKey != "" {
 		f, err := os.OpenFile("/opt/privateKey", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
@@ -76,93 +65,148 @@ func initConfig() {
 		}
 	}
 
-	dcCache = redis.GetRedis(config.Registry)
+	if config.AccessToken == "" {
+		config.AccessToken = "51dock"
+	}
+	if config.ManageToken == "" {
+		config.ManageToken = "91dock"
+	}
+
+	sha1Maker := sha1.New()
+	sha1Maker.Write([]byte("SSGO-"))
+	sha1Maker.Write([]byte(config.AccessToken))
+	sha1Maker.Write([]byte("-Dock"))
+	config.AccessToken = hex.EncodeToString(sha1Maker.Sum([]byte{}))
+	sha1Maker.Reset()
+	sha1Maker.Write([]byte("SSGO-"))
+	sha1Maker.Write([]byte(config.ManageToken))
+	sha1Maker.Write([]byte("-Dock"))
+	config.ManageToken = hex.EncodeToString(sha1Maker.Sum([]byte{}))
+
 	if shellFunc == nil {
 		shellFunc = defaultShell
 	}
 }
 
 func Start() {
-	initConfig()
 	closeChan := make(chan os.Signal, 2)
 	signal.Notify(closeChan, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-closeChan
 		log.Print("Dock	stopping ...")
 		isRunning = false
-		if syncConn != nil {
-			log.Print("Dock	stopping noitce syncer ...")
-			syncConn.Unsubscribe("_refresh")
-			syncConn.Close()
-			syncConn = nil
-			log.Print("Dock	stopped noitce syncer")
-		} else {
-			log.Print("Dock	stop without noitce syncer")
-		}
 	}()
 
+	initConfig()
+
+	load("nodes", &nodes)
+	nodeStatus = make(map[string]*NodeStatus)
+
+	files, err := ioutil.ReadDir(config.DataPath)
+	if err == nil {
+		for _, file := range files {
+			fileName := file.Name()
+			if fileName[0] == '.' || fileName == "nodes" || file.IsDir() {
+				continue
+			}
+			ctx := newContext()
+			load(fileName, &ctx)
+			log.Println("Dock	loding	context	", fileName)
+			if ctx.Name == fileName {
+				ctxList[ctx.Name] = ctx.Desc
+				ctxs[ctx.Name] = ctx
+				ctxRuns[ctx.Name] = make(map[string][]*AppStatus)
+				stoppingCtxApps[ctx.Name] = make(map[string]*AppInfo)
+			}
+		}
+	}
+	makeAppRunningInfos(true)
+	for ctxName := range ctxs {
+		checkContext(ctxName)
+	}
+
+	showStats()
+
 	isRunning = true
-	go pingRedis()
-	go syncNotice()
-	<-syncerStartChan
 
 	log.Print("Dock	started")
 	if startChan != nil {
 		startChan <- true
 	}
 
-	reviewInterval := 0
+	nodesSafely.Store(nodes)
+	nodeStatusSafely.Store(nodeStatus)
+	ctxListSafely.Store(ctxList)
+	ctxsSafely.Store(ctxs)
+	ctxRunsSafely.Store(ctxRuns)
+
+	// 开始轮询处理
 	for {
-		// 更新节点
-		nodeChanged := updateNodesInfo()
-		// 更新应用，产生 startingApps stoppingApps
-		appChanged := updateAppsInfo()
+		makingLocker.Lock()
 
-		//log.Printf("Dock	checking	nodes: %d	apps: %d", len(nodes), len(apps))
-		// 变化了或者到了 config.ReviewInterval 执行一次 review
-		if nodeChanged || appChanged || reviewInterval >= config.ReviewInterval {
-			// 获取实时运行状态
-			makeAppRunningInfo()
-
-			// 启动startingApps，停止stoppingApps
-			checkChanged := checkApps()
-
-			if nodeChanged || appChanged || checkChanged {
-				// 打印当前状态
-				showStats()
-			}
-			//else {
-			//	log.Printf("Dock	noChanged	nodes: %d	apps: %d", len(nodes), len(apps))
-			//}
-		}
-		if reviewInterval >= config.ReviewInterval {
-			reviewInterval = 0
-		}
-
+		// 获取实时运行状态
+		makeAppRunningInfos(true)
 		if !isRunning {
 			break
 		}
-
-		for i := 0; i < config.CheckInterval*2; i++ {
-			time.Sleep(sleepUnit / 2)
+		changed := false
+		for ctxName := range ctxs {
+			if checkContext(ctxName) {
+				changed = true
+			}
 			if !isRunning {
 				break
 			}
-			if isRefresh {
-				isRefresh = false
-				break
+		}
+
+		// 停掉不存在的节点上的实例
+		if len(stoppingNodes) > 0 {
+			makeAppRunningInfos(false)
+			for ctxName := range ctxs {
+				runsByApp := ctxRuns[ctxName]
+				if runsByApp != nil {
+					for appName := range runsByApp {
+						if checkAppForStoppingNodes(ctxName, appName) {
+							changed = true
+						}
+					}
+				}
+				if !isRunning {
+					break
+				}
+			}
+
+			for nodeName := range stoppingNodes {
+				//log.Println("	aaaaaaaaa	", nodeName)
+				if stoppingNodeStatus[nodeName] == nil || stoppingNodeStatus[nodeName].TotalRuns == 0 {
+					//log.Println("	aaaaaaaaa	clear ", nodeName)
+					delete(stoppingNodes, nodeName)
+					delete(stoppingNodeStatus, nodeName)
+				}
 			}
 		}
+
+		nodeStatusSafely.Store(nodeStatus)
+		ctxRunsSafely.Store(ctxRuns)
+		if changed {
+			nodesSafely.Store(nodes)
+			ctxListSafely.Store(ctxList)
+			ctxsSafely.Store(ctxs)
+			showStats()
+		}
+
+		makingLocker.Unlock()
+
 		if !isRunning {
 			break
 		}
-
-		reviewInterval += config.CheckInterval
+		for i := 0; i < config.CheckInterval; i++ {
+			time.Sleep(sleepUnit)
+			if !isRunning {
+				break
+			}
+		}
 	}
-	log.Print("Dock	waitting for noitce syncer ...")
-	<-syncerStopChan
-	log.Print("Dock	waitting for noitce pinger ...")
-	<-pingStopChan
 	if stopChan != nil {
 		stopChan <- true
 	}
@@ -178,96 +222,5 @@ func AsyncStart() {
 func AsyncStop() {
 	stopChan = make(chan bool)
 	isRunning = false
-	if syncConn != nil {
-		syncConn.Unsubscribe("_refresh")
-		syncConn.Close()
-		syncConn = nil
-	}
 	<-stopChan
-}
-
-func syncNotice() {
-	inited := false
-	for {
-		syncConn = &redigo.PubSubConn{Conn: dcCache.GetConnection()}
-		err := syncConn.Subscribe("_refresh")
-		if !inited {
-			inited = true
-			syncerStartChan <- true
-		}
-		if err != nil {
-			log.Print("REDIS SUBSCRIBE	", err)
-			syncConn.Close()
-			syncConn = nil
-
-			time.Sleep(sleepUnit)
-			if !isRunning {
-				break
-			}
-			continue
-		}
-
-		// 开始接收订阅数据
-		for {
-			isErr := false
-			if syncConn == nil || !isRunning{
-				break
-			}
-			switch v := syncConn.Receive().(type) {
-			case redigo.Message:
-				isRefresh = true
-			case error:
-				if !strings.Contains(v.Error(), "connection closed") {
-					log.Printf("REDIS RECEIVE ERROR	%s", v)
-				}
-				isErr = true
-				break
-			}
-			if isErr {
-				break
-			}
-		}
-		if !isRunning {
-			break
-		}
-		time.Sleep(sleepUnit)
-		if !isRunning {
-			break
-		}
-	}
-
-	if syncConn != nil {
-		syncConn.Unsubscribe("_refresh")
-		syncConn.Close()
-		syncConn = nil
-	}
-	syncerStopChan <- true
-}
-
-// 保持 redis 链接，否则会因为超时而发生错误
-func pingRedis() {
-	n := 15
-	if dcCache.ReadTimeout > 2000 {
-		n = dcCache.ReadTimeout / 1000 / 2
-	} else if dcCache.ReadTimeout > 0 {
-		n = 1
-	}
-	for {
-		for i := 0; i < n; i++ {
-			time.Sleep(sleepUnit)
-			if !isRunning {
-				break
-			}
-		}
-		if !isRunning {
-			break
-		}
-		if syncConn != nil {
-			syncConn.Ping("1")
-		}
-		if !isRunning {
-			break
-		}
-	}
-	pingStopChan <- true
 }

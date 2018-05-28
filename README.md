@@ -1,12 +1,28 @@
 # 基于 ssgo/s 的一个docker自动管理工具
 
-docker run -d ssgo/dock
+docker run -d --restart=always --name dock --network=host -v /opt/dock:/opt/data -e 'dock_privateKey=-----BEGIN RSA PRIVATE KEY-----,......,-----END RSA PRIVATE KEY-----' ssgo/dock:0.2
 
 # 存储依赖
 
-应用会依赖 dock.json 中 registry 指定的 redis 配置访问注册信息，默认值为 "dock:14"
+数据会存储在 /opt/data 下，可以使用 -v /opt/dock:/opt/data 来挂在外部磁盘
 
-根据 redis db 中的 _nodes, _apps, _binds 的内容，进行自动部署
+# SSH Key
+
+dock服务使用 ssh 对节点进行管理，使用 ssh-keygen 创建一堆密钥，私钥用逗号替换换行配置在环境变量中
+
+-e 'dock_privateKey=-----BEGIN RSA PRIVATE KEY-----,......,-----END RSA PRIVATE KEY-----'
+
+公钥配置在初始化好docker环境的节点的docker账号中
+
+# 管理界面
+
+http://xx.xx.xx.xx:8888/
+
+默认使用 8888 端口，可以使用 -p xxxx:8888 来改变端口
+
+使用 -e dock_accessToken=51dock 和 -e dock_managerToken=91dock 配置查看和管理两个口令进行登录授权
+
+使用 -e service_xxxx 来配置 http 相关参数，例如可以配置为基于 https 访问，具体配置请参考 https://github.com/ssgo/s
 
 ## 基本配置
 
@@ -15,58 +31,22 @@ docker run -d ssgo/dock
 ```json
 {
   "CheckInterval": 5,
-  "logFile": "",
-  "registry": "dock:14",
-  "accessToken": "",
-  "managerToken": "",
-  "nodes": {},
-  "apps": {},
-  "binds": {},
+  "dataPath": "",
+  "accessToken": "51dock",
+  "manageToken": "91dock",
   "privateKey": "-----BEGIN RSA PRIVATE KEY-----,....,....,....,-----END RSA PRIVATE KEY-----"
-}```
-
-checkInterval 检查 redis db 中数据变化的间隔时间，单位 秒
-如果修改了配置也可以使用 publish _refresh 1 进行立刻刷新
-
-accessToken 用来调用 /status 是需要在 Header 中传递 Access-Token 以获得访问权限
-
-nodes、apps、binds 作为初始配置，可部署出基本服务，例如：redis
-
-privateKey 是通过 ssh 访问 nodes 的私钥
-
-配置内容也可以同时使用 env.json 或环境变量设置（优先级高于配置文件）
-
-
-## 应用配置
-
-### nodes
-
-```shell
-hset _nodes 10.1.1.3 20,120
-hset _nodes 10.1.1.4:22 8,32
+}
 ```
 
-key 为节点的IP地址+ssh端口号
+checkInterval 检查应用状态的间隔时间，单位 秒
 
-value 为 CPUs,Memorys CPU和内存支持浮点数，内存的单位为 G
+dataPath 存储数据的路径，默认为 /opt/data
 
+accessToken 以只读方式查看节点和应用的运行状态
 
-### apps
+manageToken 以只读方式查看节点和应用的运行状态
 
-```shell
-hset _apps mysql/mysql-server:5.7 "4,32,1,1,-p 3306:3306 -v /opt/db:/var/lib/mysql"
-hset _apps redis#2 "1,4,1,1,-p 6000:6379 -v /opt/redis2:/data <--requirepass xx2xx>"
-```
+privateKey 是通过 ssh 访问节点的私钥
 
-key 镜像名称，可在镜像后面用 # 增加一个自定义 tag，没有实际意义仅用于区分不同的应用配置
-
-value 为 CPUs,Memorys,Min,Max,Args
-
-CPU和内存支持浮点数，内存的单位为 G
-
-Min和Max 分别为最小实例数和最大实例数
-
-Args 是 docker run 后面的启动参数，系统为自动配置 -d --restart=always，并且自动维护 --name，不要重复设置
-
-Args 最后如果跟着 <....> 表示使用启动参数，例如配置redis服务的密码
+可以使用 -e 'dock_xxxxxx=xxxx' 进行配置
 

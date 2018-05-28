@@ -17,7 +17,7 @@ import (
 var config = struct {
 	CheckInterval int
 	DataPath      string
-	LogFile       string
+	//LogFile       string
 	AccessToken   string
 	ManageToken   string
 	PrivateKey    string
@@ -38,18 +38,18 @@ func SetSleepUnit(unit time.Duration) {
 func initConfig() {
 	base.LoadConfig("dock", &config)
 
-	log.SetFlags(log.Ldate | log.Lmicroseconds)
-	if config.LogFile != "" {
-		f, err := os.OpenFile(config.LogFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
-		if err == nil {
-			log.SetOutput(f)
-		} else {
-			log.SetOutput(os.Stdout)
-			log.Print("ERROR	", err)
-		}
-	} else {
-		log.SetOutput(os.Stdout)
-	}
+	//log.SetFlags(log.Ldate | log.Lmicroseconds)
+	//if config.LogFile != "" {
+	//	f, err := os.OpenFile(config.LogFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	//	if err == nil {
+	//		log.SetOutput(f)
+	//	} else {
+	//		log.SetOutput(os.Stdout)
+	//		log.Print("ERROR	", err)
+	//	}
+	//} else {
+	//	log.SetOutput(os.Stdout)
+	//}
 
 	if config.CheckInterval == 0 {
 		config.CheckInterval = 5

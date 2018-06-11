@@ -33,7 +33,7 @@ func defaultShell(nodeName string, args ...string) string {
 	bytes, err := cmd.Output()
 
 	if err != nil {
-		log.Print("Dock	exec error	", err.Error(), "	times: ", nodeFailedTimes[nodeName])
+		log.Print("Dock	exec error	ssh ", strings.Join(sshArgs, " "), err.Error(), "	times: ", nodeFailedTimes[nodeName])
 		nodeFailedTimes[nodeName] ++
 		//if nodeFailedTimes[nodeName] >= 5 {
 		//	log.Print("Dock	remove bad Node	", nodeName)

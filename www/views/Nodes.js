@@ -85,7 +85,7 @@ NodesView.prototype.save = function () {
             alert('Cpu: ' + cpu + ' (1~1024) or Memory: ' + memory + ' (1~10240) is not available')
             return false
         }
-        nodes[node.name] = {cpu: cpu, memory: memory}
+        nodes[node.name.trim()] = {cpu: cpu, memory: memory}
     }
 
     var that = this

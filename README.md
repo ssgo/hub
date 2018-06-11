@@ -1,6 +1,6 @@
 # 基于 ssgo/s 的一个docker自动管理工具
 
-docker run -d --restart=always --name dock --network=host -v /opt/dock:/opt/data -e 'dock_privateKey=-----BEGIN RSA PRIVATE KEY-----,......,-----END RSA PRIVATE KEY-----' ssgo/dock:0.2
+docker run -d --restart=always --name dock --network=host -v /opt/dock:/opt/data -e 'dock_privateKey=-----BEGIN RSA PRIVATE KEY-----,......,-----END RSA PRIVATE KEY-----' ssgo/dock:0.21
 
 # 存储依赖
 

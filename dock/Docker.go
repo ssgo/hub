@@ -87,20 +87,20 @@ func startApp(ctxName, appName, nodeName string, app *AppInfo) (string, string) 
 		return ""
 	})
 
-	// 解析启动参数
-	runCmd := ""
-	if strings.HasSuffix(tmpArgs, ">") {
-		pos := strings.LastIndex(tmpArgs, " <")
-		if pos != -1 {
-			runCmd = tmpArgs[pos+2:len(tmpArgs)-1]
-			tmpArgs = tmpArgs[0:pos]
-		}
-	}
+	//// 解析启动参数
+	//runCmd := ""
+	//if strings.HasSuffix(tmpArgs, ">") {
+	//	pos := strings.LastIndex(tmpArgs, " <")
+	//	if pos != -1 {
+	//		runCmd = tmpArgs[pos+2:len(tmpArgs)-1]
+	//		tmpArgs = tmpArgs[0:pos]
+	//	}
+	//}
 
 	args = append(args, strings.Split(tmpArgs, " ")...)
 	args = append(args, appName)
-	if runCmd != "" {
-		args = append(args, strings.Split(runCmd, " ")...)
+	if app.Command != "" {
+		args = append(args, strings.Split(app.Command, " ")...)
 	}
 	log.Print("Dock	exec	run	[", ctxName, "]	\033[32mdocker ", strings.Join(args, " "), "\033[0m")
 	id := getLastLine(shellFunc(nodeName, args...))

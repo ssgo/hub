@@ -151,7 +151,8 @@ func Start() {
 		}
 		changed := false
 		for ctxName := range ctxs {
-			if checkContext(ctxName) {
+			checkChanged, _ := checkContext(ctxName)
+			if checkChanged {
 				changed = true
 			}
 			if !isRunning {

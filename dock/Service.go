@@ -121,22 +121,31 @@ func setContext(in ContextInfo) bool {
 		stoppingCtxApps[in.Name] = make(map[string]*AppInfo)
 	}
 
+	prevCtx := ctxs[in.Name]
 	ctxs[in.Name] = &in
 
 	// 立刻更新
-	if checkContext(in.Name) {
-		nodesSafely.Store(nodes)
-		nodeStatusSafely.Store(nodeStatus)
-		ctxListSafely.Store(ctxList)
-		ctxsSafely.Store(ctxs)
-		ctxRunsSafely.Store(ctxRuns)
-		showStats()
+	checkChanged, checkSucceed := checkContext(in.Name)
+	if checkSucceed {
+		if checkChanged {
+			nodesSafely.Store(nodes)
+			nodeStatusSafely.Store(nodeStatus)
+			ctxListSafely.Store(ctxList)
+			ctxsSafely.Store(ctxs)
+			ctxRunsSafely.Store(ctxRuns)
+			showStats()
+		}
+	} else {
+		ctxs[in.Name] = prevCtx
 	}
 	makingLocker.Unlock()
 
+	if !checkSucceed {
+		return false
+	}
+
 	save(in.Name, ctxs[in.Name])
 	save(fmt.Sprintf("bak/%s/%s", in.Name, time.Now().Format("2006-01/02/15:04:05")), ctxs[in.Name])
-
 	return true
 }
 
@@ -149,7 +158,8 @@ func removeContext(in struct{ Name string }) bool {
 	makingLocker.Lock()
 	makeAppRunningInfos(true)
 	ctxs[in.Name].Apps = make(map[string]*AppInfo)
-	if checkContext(in.Name) {
+	checkChanged, _ := checkContext(in.Name)
+	if checkChanged {
 		nodesSafely.Store(nodes)
 		nodeStatusSafely.Store(nodeStatus)
 		ctxListSafely.Store(ctxList)

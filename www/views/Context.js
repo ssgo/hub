@@ -119,7 +119,7 @@ ContextView.prototype.save = function () {
             return false
         }
 
-        apps[v.name] = {
+        apps[v.name.trim()] = {
             desc: v.desc,
             cpu: cpu,
             memory: memory,
@@ -130,7 +130,7 @@ ContextView.prototype.save = function () {
             memo: v.memo,
             active: v.active === true
         }
-        delete apps[v.name]['name']
+        // delete apps[v.name.trim()]['name']
     }
 
     var vars = {}
@@ -139,7 +139,7 @@ ContextView.prototype.save = function () {
         if (!v.name) {
             continue
         }
-        vars[v.name] = v.value
+        vars[v.name.trim()] = v.value
     }
 
     var binds = {}
@@ -148,19 +148,23 @@ ContextView.prototype.save = function () {
         if (!v.name) {
             continue
         }
-        binds[v.name] = v.value
+        binds[v.name.trim()] = v.value
     }
 
     var that = this
     actions.call('context.save', {
-        name: this.name,
+        name: this.name.trim(),
         desc: this.data.desc,
         apps: apps,
         vars: vars,
         binds: binds
-    }).then(function () {
-        that.setData({changed: false})
-        that.onShow()
+    }).then(function (succeed) {
+        if (succeed) {
+            that.setData({changed: false})
+            that.onShow()
+        }else{
+            alert('Save context has failed, maybe the container can not run')
+        }
     }).catch(function (reason) {
         alert('Save context has error: ' + reason)
     })
@@ -180,6 +184,7 @@ ContextView.prototype.remove = function () {
 ContextView.prototype.check = function (event, type, idx) {
     var oldList = this.data['_' + type]
     var list = this.data[type]
+    var changed = false
     if ((idx < oldList.length && JSON.stringify(list[idx]) !== JSON.stringify(oldList[idx])) ||
         (idx >= oldList.length && list[idx].name)) {
         list[idx].changed = true
@@ -187,10 +192,14 @@ ContextView.prototype.check = function (event, type, idx) {
             this.data.changed = true
         }
         // tpl.refresh(event.target.parentElement.parentElement, {index: idx, item: list[idx]})
-        this.refreshView()
+        changed = true
     }
     if (idx === list.length - 1) {
         list.push({})
+        changed = true
+    }
+
+    if (changed === true){
         this.refreshView()
     }
 }

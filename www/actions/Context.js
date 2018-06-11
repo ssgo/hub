@@ -24,14 +24,14 @@ var ContextAction = {
     },
 
     'save': function (ctx, args) {
-        ctx.http.post('/' + args.name, args).then(function () {
-            ctx.resolve()
+        ctx.http.post('/' + args.name, args).then(function (data) {
+            ctx.resolve(data)
         }).catch(ctx.reject)
     },
 
     'remove': function (ctx, args) {
-        ctx.http.delete('/' + args.name).then(function () {
-            ctx.resolve()
+        ctx.http.delete('/' + args.name).then(function (data) {
+            ctx.resolve(data)
         }).catch(ctx.reject)
     }
 }

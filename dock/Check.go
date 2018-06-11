@@ -84,12 +84,12 @@ func makeAppRunningInfos(isAll bool) {
 	}
 }
 
-func checkContext(ctxName string) bool {
+func checkContext(ctxName string) (bool, bool) {
 	changed := false
 	ctx := ctxs[ctxName]
 	runsByApp := ctxRuns[ctxName]
 	if ctx == nil {
-		return false
+		return false, true
 	}
 	if runsByApp == nil {
 		runsByApp = map[string][]*AppStatus{}
@@ -98,8 +98,12 @@ func checkContext(ctxName string) bool {
 
 	// 启动需要的App
 	for appName := range ctx.Apps {
-		if checkAppForStart(ctxName, appName) {
+		startChanged, startSucceed := checkAppForStart(ctxName, appName)
+		if startChanged {
 			changed = true
+		}
+		if startSucceed == false {
+			return changed, false
 		}
 	}
 
@@ -119,22 +123,22 @@ func checkContext(ctxName string) bool {
 
 	// TODO 根据实际负债情况进行弹性伸缩
 
-	return changed
+	return changed, true
 }
 
-func checkAppForStart(ctxName, appName string) bool {
+func checkAppForStart(ctxName, appName string) (bool, bool) {
 
 	changed := false
 	ctx := ctxs[ctxName]
 	runsByApp := ctxRuns[ctxName]
 	if ctx == nil || runsByApp == nil {
-		return false
+		return false, true
 	}
 
 	app := ctx.Apps[appName]
 	runs := runsByApp[appName]
 	if app == nil || app.Active == false {
-		return false
+		return false, true
 	}
 
 	if runs == nil {
@@ -205,6 +209,10 @@ func checkAppForStart(ctxName, appName string) bool {
 		if nodes[nodeName] != nil {
 			// 不存在了的节点不执行
 			id, runName = startApp(ctxName, appName, nodeName, app)
+			if id == "" || runName == "" {
+				// 启动失败将不执行后面的过程
+				return changed, false
+			}
 			changed = true
 		}
 
@@ -227,7 +235,7 @@ func checkAppForStart(ctxName, appName string) bool {
 		}
 		ctx.Binds[appName] = append(ctx.Binds[appName], appendBinds...)
 	}
-	return changed
+	return changed, true
 }
 
 func checkAppForStop(ctxName, appName string) bool {

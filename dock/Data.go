@@ -8,9 +8,9 @@ import (
 	"github.com/ssgo/base"
 	"strconv"
 	"io"
-	"log"
 	"github.com/mitchellh/mapstructure"
 	"sync/atomic"
+	"github.com/ssgo/s"
 )
 
 type NodeInfo struct {
@@ -52,6 +52,9 @@ type AppStatus struct {
 	Memory float32
 	IsBind bool
 }
+
+var globalVars  map[string]*string
+var globalArgs  string
 
 var nodes = map[string]*NodeInfo{}
 var nodeStatus = map[string]*NodeStatus{}
@@ -99,12 +102,22 @@ func load(file string, to interface{}) {
 	data := map[string]interface{}{}
 	err = decoder.Decode(&data)
 	if err != nil {
-		log.Printf("Dock	load file	%s	%s", file, err.Error())
+		s.Error("Dock", s.Map{
+			"type": "loadFileFailed",
+			"file": file,
+			"error": err.Error(),
+		})
+		//log.Printf("Dock	load file	%s	%s", file, err.Error())
 	}
 	fp.Close()
 	err = mapstructure.WeakDecode(&data, to)
 	if err != nil {
-		log.Printf("Dock	load decode	%s	%s", file, err.Error())
+		s.Error("Dock", s.Map{
+			"type": "loadFileDecodeFailed",
+			"file": file,
+			"error": err.Error(),
+		})
+		//log.Printf("Dock	load decode	%s	%s", file, err.Error())
 	}
 }
 
@@ -130,19 +143,26 @@ func incr(file string) int {
 	file = fmt.Sprintf("%s/.incr/%s", config.DataPath, file)
 	checkPath(file)
 
-	fp, err := os.OpenFile(file, os.O_CREATE, 0600)
+	fp, err := os.OpenFile(file, os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
-		return base.Rander.Intn(99999)
+		return base.Rander.Intn(999999)
 	}
 	buf := make([]byte, 20)
 	n, err := fp.Read(buf)
-	if err != nil {
-		fp.Close()
-		return base.Rander.Intn(99999)
+	i := 0
+	//if err != nil {
+		//fp.Close()
+		//return base.Rander.Intn(999999)
+	//}
+
+	if err == nil {
+		i, err = strconv.Atoi(string(buf[0:n]))
+		if err != nil {
+			i = 0
+		}
 	}
 
-	i, err := strconv.Atoi(string(buf[0:n]))
-	if err != nil {
+	if i >= 999999 {
 		i = 0
 	}
 

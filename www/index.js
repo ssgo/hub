@@ -25,7 +25,7 @@ var actions = new svcAction.Action({
 })
 
 actions.register('user', UserAction)
-actions.register('nodes', NodesAction)
+actions.register('global', GlobalAction)
 actions.register('context', ContextAction)
 
 // 设置根路由Root
@@ -45,7 +45,7 @@ route.bindHash()
 states.bind('logined', function (data) {
     if (data.logined) {
         if (!startRoute || /^\/login/.test(startRoute)) {
-            route.go('/dock/nodes')
+            route.go('/dock/global')
         } else {
             route.go(startRoute)
         }
@@ -58,3 +58,10 @@ window.addEventListener('load', function () {
     actions.call('user.login', {accessToken: sessionStorage.accessToken}).catch(function (reason) {
     })
 })
+
+setInterval(function () {
+    var m = states.state.currentModule
+    if( m && m['isActive'] && m['refreshStatus'] && typeof m['refreshStatus'] === 'function' ){
+        m.refreshStatus(m)
+    }
+}, 5000, this)

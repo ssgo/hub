@@ -6,6 +6,7 @@ import (
 	"strings"
 	"fmt"
 	"time"
+	"github.com/ssgo/base"
 )
 
 func Registers() {
@@ -13,13 +14,13 @@ func Registers() {
 	s.Static("/", "www")
 	s.Restful(0, "POST", "/login", login)
 
-	s.Restful(1, "GET", "/nodes/status", getNodeStatus)
-	s.Restful(1, "GET", "/nodes", getNodeList)
+	s.Restful(1, "GET", "/global/status", getGlobalStatus)
+	s.Restful(1, "GET", "/global", getGlobalInfo)
 	s.Restful(1, "GET", "/contexts", getContextList)
 	s.Restful(1, "GET", "/{name}/status", getContextRuns)
 	s.Restful(1, "GET", "/{name}", getContext)
 
-	s.Restful(2, "POST", "/nodes", setNodes)
+	s.Restful(2, "POST", "/global", setGlobalInfo)
 	s.Restful(2, "POST", "/{name}", setContext)
 	s.Restful(2, "DELETE", "/{name}", removeContext)
 }
@@ -44,12 +45,29 @@ func login(request *http.Request) int {
 	return 0
 }
 
-func getNodeList() map[string]*NodeInfo {
-	return nodesSafely.Load().(map[string]*NodeInfo)
+type GlobalInfo struct{
+	Nodes map[string]*NodeInfo
+	Vars map[string]*string
+	Args string
 }
 
-func getNodeStatus() map[string]*NodeStatus {
-	return nodeStatusSafely.Load().(map[string]*NodeStatus)
+func getGlobalInfo() GlobalInfo {
+	return GlobalInfo{
+		Nodes: nodesSafely.Load().(map[string]*NodeInfo),
+		Vars: globalVars,
+		Args: globalArgs,
+	}
+}
+
+
+type globalStatusResult struct{
+	Nodes map[string]*NodeStatus
+}
+
+func getGlobalStatus() globalStatusResult {
+	return globalStatusResult{
+		Nodes: nodeStatusSafely.Load().(map[string]*NodeStatus),
+	}
 }
 
 func getContextList() map[string]string {
@@ -66,67 +84,114 @@ func getContextRuns(in struct{ Name string }) map[string][]*AppStatus {
 	return ctxRunsTemp[in.Name]
 }
 
-func setNodes(in struct{ Nodes map[string]*NodeInfo }) bool {
-	makingLocker.Lock()
-
-	makeAppRunningInfos(true)
-	// 如果有在要去掉节点上的应用，存储到 stoppingNodes
-	//changedCtxs := make([]string, 0)
-	for nodeName, node := range nodes {
-		if in.Nodes[nodeName] == nil {
-			stoppingNodes[nodeName] = node
-		}
-	}
-
-	//for _, ctxName := range changedCtxs {
-	//	checkContext(ctxName)
-	//}
-
-	nodes = in.Nodes
-	for nodeName := range nodes {
-		if nodeStatus[nodeName] == nil {
-			nodeStatus[nodeName] = &NodeStatus{UsedCpu: 0, UsedMemory: 0}
-		}
-	}
-	for nodeName := range nodeStatus {
-		if nodes[nodeName] == nil {
-			delete(nodeStatus, nodeName)
-		}
-	}
-
-	nodesSafely.Store(nodes)
-	makingLocker.Unlock()
-
-	save("nodes", nodes)
-	save(fmt.Sprintf("bak/nodes/%s", time.Now().Format("2006-01/02/15:04:05")), nodes)
-	return true
+type SetResult struct{
+	Ok bool
+	Error string
 }
 
-func setContext(in ContextInfo) bool {
+func setGlobalInfo(in GlobalInfo) SetResult {
+	makingLocker.Lock()
+
+	if makeAppRunningInfos(true) {
+		// 如果有在要去掉节点上的应用，存储到 stoppingNodes
+		//changedCtxs := make([]string, 0)
+		for nodeName, node := range nodes {
+			if in.Nodes[nodeName] == nil {
+				stoppingNodes[nodeName] = node
+			}
+		}
+
+		//for _, ctxName := range changedCtxs {
+		//	checkContext(ctxName)
+		//}
+
+		nodes = in.Nodes
+		for nodeName := range nodes {
+			if nodeStatus[nodeName] == nil {
+				nodeStatus[nodeName] = &NodeStatus{UsedCpu: 0, UsedMemory: 0}
+			}
+		}
+		for nodeName := range nodeStatus {
+			if nodes[nodeName] == nil {
+				delete(nodeStatus, nodeName)
+			}
+		}
+		nodesSafely.Store(nodes)
+
+		globalVars = in.Vars
+		globalArgs = in.Args
+	}
+	makingLocker.Unlock()
+
+	//save("nodes", nodes)
+	save("global", in)
+	save(fmt.Sprintf("bak/global/%s", time.Now().Format("2006-01/02/15:04:05")), in)
+	return SetResult{Ok: true}
+}
+
+func setContext(in ContextInfo) SetResult {
 	// not support - / , because docker id need -
-	if in.Name == "" || in.Name == "nodes" || strings.IndexByte(in.Name, '-') != -1 || strings.IndexByte(in.Name, '/') != -1 {
-		return false
+	if in.Name == "" || in.Name == "global" || in.Name == "nodes" || strings.IndexByte(in.Name, '-') != -1 || strings.IndexByte(in.Name, '/') != -1 {
+		return SetResult{Error: "bad name"}
 	}
 
 	makingLocker.Lock()
 
-	makeAppRunningInfos(true)
+	var checkSucceed bool
+	var checkChanged bool
+	var err error
+	if makeAppRunningInfos(true) {
 
-	ctxList[in.Name] = in.Desc
+		ctxList[in.Name] = in.Desc
 
-	if ctxRuns[in.Name] == nil {
-		ctxRuns[in.Name] = make(map[string][]*AppStatus)
+		if ctxRuns[in.Name] == nil {
+			ctxRuns[in.Name] = make(map[string][]*AppStatus)
+		}
+		if stoppingCtxApps[in.Name] == nil {
+			stoppingCtxApps[in.Name] = make(map[string]*AppInfo)
+		}
+
+		prevCtx := ctxs[in.Name]
+		ctxs[in.Name] = &in
+
+		// 立刻更新
+		checkChanged, checkSucceed, err = checkContext(in.Name)
+		if checkSucceed {
+			if checkChanged {
+				nodesSafely.Store(nodes)
+				nodeStatusSafely.Store(nodeStatus)
+				ctxListSafely.Store(ctxList)
+				ctxsSafely.Store(ctxs)
+				ctxRunsSafely.Store(ctxRuns)
+				showStats()
+			}
+		} else {
+			ctxs[in.Name] = prevCtx
+		}
 	}
-	if stoppingCtxApps[in.Name] == nil {
-		stoppingCtxApps[in.Name] = make(map[string]*AppInfo)
+	makingLocker.Unlock()
+
+	if !checkSucceed {
+		return SetResult{Error: base.StringIf(err == nil, "", err.Error())}
 	}
 
-	prevCtx := ctxs[in.Name]
-	ctxs[in.Name] = &in
+	save(in.Name, ctxs[in.Name])
+	save(fmt.Sprintf("bak/%s/%s", in.Name, time.Now().Format("2006-01/02/15:04:05")), ctxs[in.Name])
+	return SetResult{Ok: true}
+}
 
-	// 立刻更新
-	checkChanged, checkSucceed := checkContext(in.Name)
-	if checkSucceed {
+func removeContext(in struct{ Name string }) SetResult {
+	if in.Name == "" || in.Name == "global" || in.Name == "nodes" || ctxs[in.Name] == nil {
+		return SetResult{Error: "bad name"}
+	}
+
+	// 立刻更新，停掉所有节点
+	var checkChanged bool
+	var err error
+	makingLocker.Lock()
+	if makeAppRunningInfos(true) {
+		ctxs[in.Name].Apps = make(map[string]*AppInfo)
+		checkChanged, _, err = checkContext(in.Name)
 		if checkChanged {
 			nodesSafely.Store(nodes)
 			nodeStatusSafely.Store(nodeStatus)
@@ -135,37 +200,6 @@ func setContext(in ContextInfo) bool {
 			ctxRunsSafely.Store(ctxRuns)
 			showStats()
 		}
-	} else {
-		ctxs[in.Name] = prevCtx
-	}
-	makingLocker.Unlock()
-
-	if !checkSucceed {
-		return false
-	}
-
-	save(in.Name, ctxs[in.Name])
-	save(fmt.Sprintf("bak/%s/%s", in.Name, time.Now().Format("2006-01/02/15:04:05")), ctxs[in.Name])
-	return true
-}
-
-func removeContext(in struct{ Name string }) bool {
-	if in.Name == "" || in.Name == "nodes" || ctxs[in.Name] == nil {
-		return false
-	}
-
-	// 立刻更新，停掉所有节点
-	makingLocker.Lock()
-	makeAppRunningInfos(true)
-	ctxs[in.Name].Apps = make(map[string]*AppInfo)
-	checkChanged, _ := checkContext(in.Name)
-	if checkChanged {
-		nodesSafely.Store(nodes)
-		nodeStatusSafely.Store(nodeStatus)
-		ctxListSafely.Store(ctxList)
-		ctxsSafely.Store(ctxs)
-		ctxRunsSafely.Store(ctxRuns)
-		showStats()
 	}
 	makingLocker.Unlock()
 
@@ -173,5 +207,9 @@ func removeContext(in struct{ Name string }) bool {
 	delete(ctxs, in.Name)
 	delete(ctxRuns, in.Name)
 	remove(in.Name)
-	return false
+
+	if err != nil {
+		return SetResult{Error: err.Error()}
+	}
+	return SetResult{Ok: true}
 }

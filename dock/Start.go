@@ -1,7 +1,6 @@
 package dock
 
 import (
-	"log"
 	"time"
 	"os"
 	"github.com/ssgo/base"
@@ -12,15 +11,16 @@ import (
 	"sync"
 	"crypto/sha1"
 	"encoding/hex"
+	"github.com/ssgo/s"
 )
 
 var config = struct {
 	CheckInterval int
 	DataPath      string
 	//LogFile       string
-	AccessToken   string
-	ManageToken   string
-	PrivateKey    string
+	AccessToken string
+	ManageToken string
+	PrivateKey  string
 }{}
 
 var sleepUnit = time.Second
@@ -93,25 +93,41 @@ func Start() {
 	signal.Notify(closeChan, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-closeChan
-		log.Print("Dock	stopping ...")
+		s.Info("Dock", s.Map{
+			"type": "stopping",
+		})
+		//log.Print("Dock	stopping ...")
 		isRunning = false
 	}()
 
 	initConfig()
 
-	load("nodes", &nodes)
+	global := GlobalInfo{}
+	load("global", &global)
+	if len(global.Nodes) == 0 && len(global.Vars) == 0 && global.Args == "" {
+		// 兼容之前的 nodes 存储
+		load("nodes", &global.Nodes)
+	}
+	nodes = global.Nodes
+	globalVars = global.Vars
+	globalArgs = global.Args
 	nodeStatus = make(map[string]*NodeStatus)
 
 	files, err := ioutil.ReadDir(config.DataPath)
 	if err == nil {
 		for _, file := range files {
 			fileName := file.Name()
-			if fileName[0] == '.' || fileName == "nodes" || file.IsDir() {
+			if fileName[0] == '.' || fileName == "global" || fileName == "nodes" || file.IsDir() {
 				continue
 			}
 			ctx := newContext()
 			load(fileName, &ctx)
-			log.Println("Dock	loding	context	", fileName)
+			s.Info("Dock", s.Map{
+				"type":    "loadContext",
+				"file":    fileName,
+				"context": ctx,
+			})
+			//log.Println("Dock	loading	context	", fileName)
 			if ctx.Name == fileName {
 				ctxList[ctx.Name] = ctx.Desc
 				ctxs[ctx.Name] = ctx
@@ -120,16 +136,20 @@ func Start() {
 			}
 		}
 	}
-	makeAppRunningInfos(true)
-	for ctxName := range ctxs {
-		checkContext(ctxName)
+	if makeAppRunningInfos(true) {
+		for ctxName := range ctxs {
+			checkContext(ctxName)
+		}
 	}
 
 	showStats()
 
 	isRunning = true
 
-	log.Print("Dock	started")
+	s.Info("Dock", s.Map{
+		"type":    "started",
+	})
+	//log.Print("Dock	started")
 	if startChan != nil {
 		startChan <- true
 	}
@@ -145,55 +165,53 @@ func Start() {
 		makingLocker.Lock()
 
 		// 获取实时运行状态
-		makeAppRunningInfos(true)
-		if !isRunning {
-			break
-		}
-		changed := false
-		for ctxName := range ctxs {
-			checkChanged, _ := checkContext(ctxName)
-			if checkChanged {
-				changed = true
-			}
-			if !isRunning {
-				break
-			}
-		}
-
-		// 停掉不存在的节点上的实例
-		if len(stoppingNodes) > 0 {
-			makeAppRunningInfos(false)
+		if makeAppRunningInfos(true) {
+			changed := false
 			for ctxName := range ctxs {
-				runsByApp := ctxRuns[ctxName]
-				if runsByApp != nil {
-					for appName := range runsByApp {
-						if checkAppForStoppingNodes(ctxName, appName) {
-							changed = true
-						}
-					}
+				checkChanged, _, _ := checkContext(ctxName)
+				if checkChanged {
+					changed = true
 				}
 				if !isRunning {
 					break
 				}
 			}
 
-			for nodeName := range stoppingNodes {
-				//log.Println("	aaaaaaaaa	", nodeName)
-				if stoppingNodeStatus[nodeName] == nil || stoppingNodeStatus[nodeName].TotalRuns == 0 {
-					//log.Println("	aaaaaaaaa	clear ", nodeName)
-					delete(stoppingNodes, nodeName)
-					delete(stoppingNodeStatus, nodeName)
+			// 停掉不存在的节点上的实例
+			if len(stoppingNodes) > 0 {
+				makeAppRunningInfos(false)
+				for ctxName := range ctxs {
+					runsByApp := ctxRuns[ctxName]
+					if runsByApp != nil {
+						for appName := range runsByApp {
+							if ok, _ := checkAppForStoppingNodes(ctxName, appName); ok {
+								changed = true
+							}
+						}
+					}
+					if !isRunning {
+						break
+					}
+				}
+
+				for nodeName := range stoppingNodes {
+					//log.Println("	aaaaaaaaa	", nodeName)
+					if stoppingNodeStatus[nodeName] == nil || stoppingNodeStatus[nodeName].TotalRuns == 0 {
+						//log.Println("	aaaaaaaaa	clear ", nodeName)
+						delete(stoppingNodes, nodeName)
+						delete(stoppingNodeStatus, nodeName)
+					}
 				}
 			}
-		}
 
-		nodeStatusSafely.Store(nodeStatus)
-		ctxRunsSafely.Store(ctxRuns)
-		if changed {
-			nodesSafely.Store(nodes)
-			ctxListSafely.Store(ctxList)
-			ctxsSafely.Store(ctxs)
-			showStats()
+			nodeStatusSafely.Store(nodeStatus)
+			ctxRunsSafely.Store(ctxRuns)
+			if changed {
+				nodesSafely.Store(nodes)
+				ctxListSafely.Store(ctxList)
+				ctxsSafely.Store(ctxs)
+				showStats()
+			}
 		}
 
 		makingLocker.Unlock()
@@ -211,7 +229,10 @@ func Start() {
 	if stopChan != nil {
 		stopChan <- true
 	}
-	log.Print("Dock	stopped")
+	s.Info("Dock", s.Map{
+		"type":    "stopped",
+	})
+	//log.Print("Dock	stopped")
 }
 
 func AsyncStart() {

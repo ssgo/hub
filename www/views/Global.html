@@ -1,0 +1,90 @@
+<div if="data.authLevel>=2" class="saveBox">
+    <button if="data.changed" class="btn btn-primary" onclick="$this.save();">Save</button>
+</div>
+
+<div class="fullBox">
+    <h3 class="sub-header">Nodes<span class="text-muted" style="font-size:14px;margin-left:10px">clear the name than save for remove a node</span>
+    </h3>
+    <table class="table table-condensed table-hover">
+        <thead>
+        <tr>
+            <th>Name</th>
+            <th>Total Cpu</th>
+            <th>Total Mem (G)</th>
+            <th align="center" class="hidden-xs">Used Cpu</th>
+            <th align="center" class="hidden-xs">Used Mem</th>
+            <th align="center" class="hidden-xs">Apps</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr each="data.nodes" class="test {item.changed&&'danger'}">
+            <td>
+                <input if="data.editMode" type="text" class="form-control" placeholder="Name" bind="item.name"
+                       onbind="$this.check(event, 'nodes',{index})">
+                <span class="text-muted" if="!data.editMode">{item.name}</span>
+            </td>
+            <td>
+                <input if="data.editMode" type="text" class="form-control" placeholder="CPU" bind="item.cpu"
+                       onbind="$this.check(event, 'nodes',{index})" {data.editMode!==true?'disabled':''}>
+                <span class="text-muted" if="!data.editMode">{item.cpu}</span>
+            </td>
+            <td>
+                <input if="data.editMode" type="text" class="form-control" placeholder="Mem" bind="item.memory"
+                       onbind="$this.check(event, 'nodes',{index})" {data.editMode!==true?'disabled':''}>
+                <span class="text-muted" if="!data.editMode">{item.memory}</span>
+            </td>
+            <td align="center" class="hidden-xs usedCpu_{index}">
+                <span class="text-muted">{item.usedCpu}</span>
+            </td>
+            <td align="center" class="hidden-xs usedMemory_{index}">
+                <span class="text-muted">{item.usedMemory}</span>
+            </td>
+            <td align="center" class="hidden-xs totalRuns_{index}">
+                <span class="text-muted">{item.totalRuns}</span>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <h3 class="sub-header">Global Vars<span class="text-muted" style="font-size:14px;margin-left:10px">var can use "${varname} in app args", for example: "-p 8001:80 ${redis_conn} -e 'SNAME=abc'"</span>
+    </h3>
+    <div class="table-responsive">
+        <table class="table table-condensed table-hover">
+            <thead>
+            <tr>
+                <th width="30%">Key</th>
+                <th>Value</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr each="data.vars" class="{item.changed&&'danger'}">
+                <td>
+                    <input if="data.editMode" type="text" class="form-control" placeholder="Name" bind="item.name"
+                           onbind="$this.check(event, 'vars',{index})">
+                    <span class="text-muted" if="!data.editMode">{item.name}</span>
+                </td>
+                <td>
+                    <input if="data.editMode" type="text" class="form-control" placeholder="Value" bind="item.value"
+                           onbind="$this.check(event, 'vars',{index})">
+                    <span class="text-muted" if="!data.editMode">{item.value}</span>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3 class="sub-header">Global Args<span class="text-muted" style="font-size:14px;margin-left:10px">global args will attach at any app's args, for example: "--log-driver=fluentd"</span>
+    </h3>
+    <div style="padding:5px">
+        <textarea if="data.editMode" style="width:100%;height:80px" bind="data.args"
+                  onBind="$this.setData({changed: true})"></textarea>
+        <span if="!data.editMode">{data.args}</span>
+    </div>
+
+    <div align="center">
+        <br/>
+        <button if="data.editMode" class="btn btn-danger" onclick="$this.remove();">Remove</button>
+        <br/>
+    </div>
+
+</div>

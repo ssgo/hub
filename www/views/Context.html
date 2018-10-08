@@ -22,60 +22,61 @@
             </tr>
             </thead>
             <tbody each="data.apps">
-            <tr class="test {item.changed&&'danger'}" align="center">
+            <tr class="{item.changed&&'danger'}" align="center">
                 <td>
                     <input if="data.editMode" type="text" class="form-control" placeholder="Name" bind="item.name"
                            onbind="$this.check(event, 'apps',{index})">
-                    <span if="!data.editMode"><b>{item.name}</b></span>
+                    <span class="text-muted" if="!data.editMode">{item.name}</span>
                 </td>
                 <td>
                     <input if="data.editMode" type="text" class="form-control" placeholder="CPU" bind="item.cpu"
                            onbind="$this.check(event, 'apps',{index})">
-                    <span if="!data.editMode">{item.cpu}</span>
+                    <span class="text-muted" if="!data.editMode">{item.cpu}</span>
                 </td>
                 <td>
                     <input if="data.editMode" type="text" class="form-control" placeholder="Mem" bind="item.memory"
                            onbind="$this.check(event, 'apps',{index})">
-                    <span if="!data.editMode">{item.memory}</span>
+                    <span class="text-muted" if="!data.editMode">{item.memory}</span>
                 </td>
                 <td>
                     <input if="data.editMode" type="text" class="form-control" placeholder="Min" bind="item.min"
                            onbind="$this.check(event, 'apps',{index})">
-                    <span if="!data.editMode">{item.min}</span>
+                    <span class="text-muted" if="!data.editMode">{item.min}</span>
                 </td>
                 <td>
                     <input if="data.editMode" type="text" class="form-control" placeholder="Max" bind="item.max"
                            onbind="$this.check(event, 'apps',{index})">
-                    <span if="!data.editMode">{item.max}</span>
+                    <span class="text-muted" if="!data.editMode">{item.max}</span>
                 </td>
                 <td>
                     <input if="data.editMode" type="text" class="form-control" placeholder="Docker Args" bind="item.args"
                            onbind="$this.check(event, 'apps',{index})">
-                    <span if="!data.editMode">{item.args}</span>
+                    <span class="text-muted" if="!data.editMode">{item.args}</span>
                 </td>
                 <td>
                     <input if="data.editMode" type="text" class="form-control" placeholder="Command" bind="item.command"
                            onbind="$this.check(event, 'apps',{index})">
-                    <span if="!data.editMode">{item.command}</span>
+                    <span class="text-muted" if="!data.editMode">{item.command}</span>
                 </td>
                 <td>
                     <input if="data.editMode" type="text" class="form-control" placeholder="Memo" bind="item.memo"
                            onbind="$this.check(event, 'apps',{index})">
-                    <span if="!data.editMode">{item.memo}</span>
+                    <span class="text-muted" if="!data.editMode">{item.memo}</span>
                 </td>
                 <td>
                     <input if="data.editMode" type="checkbox" class="form-control" bind="item.active"
                            onbind="$this.check(event, 'apps',{index})">
-                    <span if="!data.editMode" style="color:{item.active?'#090':'#f66'}">●</span>
+                    <span class="text-muted" if="!data.editMode" style="color:{item.active?'#090':'#f66'}">●</span>
                 </td>
             </tr>
             <tr>
                 <td colspan="9" class="status_box_{index}" style="padding-left:8px;font-size:14px;border:none">
-                    <div each="index2,item2 in item.runs" class="pull-left" style="min-width:250px">
+                    <div each="index2,item2 in item.runs" class="pull-left" style="min-width:160px">
                         <span class="text-danger">{parseInt(index2)+1}</span>
-                        <span class="text-primary" style="cursor:copy" onclick="document.execCommand('copy')" onmouseover="var range=document.createRange();range.selectNode(this);window.getSelection().addRange(range);" onmouseout="window.getSelection().empty();" title="click to copy">{item2.node}{item2.isBind?'*':''}</span>
                         <span class="text-primary" style="cursor:copy" onclick="document.execCommand('copy')" onmouseover="var range=document.createRange();range.selectNode(this);window.getSelection().addRange(range);" onmouseout="window.getSelection().empty();" title="click to copy">{item2.name}</span>
-                        <span class="text-muted">{item2.showUpTime}</span>
+                        <br/>
+                        <span class="text-primary" style="cursor:copy;margin-left:10px" onclick="document.execCommand('copy')" onmouseover="var range=document.createRange();range.selectNode(this);window.getSelection().addRange(range);" onmouseout="window.getSelection().empty();" title="click to copy">{item2.node}{item2.isBind?'*':''}</span>
+                        <span class="text-muted" style="color:{item2.showUpTimeColor}">{item2.showUpTime}</span>
                     </div>
                     <div if="!item.runs" class="text-muted">No runs</div>
                 </td>
@@ -95,16 +96,16 @@
             </tr>
             </thead>
             <tbody>
-            <tr each="data.vars" class="test {item.changed&&'danger'}">
+            <tr each="data.vars" class="{item.changed&&'danger'}">
                 <td>
                     <input if="data.editMode" type="text" class="form-control" placeholder="Name" bind="item.name"
                            onbind="$this.check(event, 'vars',{index})">
-                    <span if="!data.editMode">{item.name}</span>
+                    <span class="text-muted" if="!data.editMode">{item.name}</span>
                 </td>
                 <td>
                     <input if="data.editMode" type="text" class="form-control" placeholder="Value" bind="item.value"
                            onbind="$this.check(event, 'vars',{index})">
-                    <span if="!data.editMode">{item.value}</span>
+                    <span class="text-muted" if="!data.editMode">{item.value}</span>
                 </td>
             </tr>
             </tbody>
@@ -122,16 +123,16 @@
             </tr>
             </thead>
             <tbody>
-            <tr each="data.binds" class="test {item.changed&&'danger'}">
+            <tr each="data.binds" class="{item.changed&&'danger'}">
                 <td>
                     <input if="data.editMode" type="text" class="form-control" placeholder="Name" bind="item.name"
                            onbind="$this.check(event, 'binds',{index})">
-                    <span if="!data.editMode">{item.name}</span>
+                    <span class="text-muted" if="!data.editMode">{item.name}</span>
                 </td>
                 <td>
                     <input if="data.editMode" type="text" class="form-control" placeholder="Value" bind="item.value"
                            onbind="$this.check(event, 'binds',{index})">
-                    <span if="!data.editMode">{item.value}</span>
+                    <span class="text-muted" if="!data.editMode">{item.value}</span>
                 </td>
             </tr>
             </tbody>

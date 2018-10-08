@@ -3,8 +3,8 @@ var DockView = {
     stateBinds: ['contexts', 'authLevel', 'editMode'],
 
     getSubView: function (subName) {
-        if (subName === 'nodes') {
-            return new NodesView()
+        if (subName === 'global') {
+            return new GlobalView()
         } else {
             return new ContextView(subName)
         }

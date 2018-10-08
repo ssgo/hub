@@ -1,22 +1,26 @@
 package dock
 
 import (
-	"log"
 	"strings"
 	"fmt"
 	"regexp"
+	"github.com/ssgo/s"
 )
 
 var nodeFailedTimes = map[string]int{}
 var dockerNameFilter *regexp.Regexp
 var dockerVarReplacer *regexp.Regexp
 
-func getRunningApps(nodeName string) []*AppStatus {
+func getRunningApps(nodeName string) ([]*AppStatus, error) {
 	runs := make([]*AppStatus, 0)
-	out := shellFunc(nodeName, "ps", "--format", "'{{.ID}}, {{.Names}}, {{.Image}}, {{.Status}}'")
+	out, _, err := shellFunc(15000, nodeName, "ps", "--format", "'{{.ID}},{{.Names}},{{.Image}},{{.Status}}'")
+	if err != nil {
+		return nil, err
+	}
+
 	//log.Println("	******	", out)
 	for _, line := range strings.Split(out, "\n") {
-		a1 := strings.Split(line, ", ")
+		a1 := strings.Split(line, ",")
 		if len(a1) >= 4 {
 			a2 := strings.Split(a1[1], "-")
 			run := &AppStatus{Ctx: a2[0], Node: nodeName, Id: a1[0], Name: a1[1], Image: a1[2], UpTime: a1[3]}
@@ -27,13 +31,26 @@ func getRunningApps(nodeName string) []*AppStatus {
 			runs = append(runs, run)
 		}
 	}
-	return runs
+	return runs, nil
 }
 
-func startApp(ctxName, appName, nodeName string, app *AppInfo) (string, string) {
+func checkRun(ctxName string, run *AppStatus) bool {
+	// TODO if check failed, how to kill for root's
+	//if run.Id == "" {
+	//	return true
+	//}
+	//
+	//if out := getLastLine(shellFunc(10000, run.Node, "exec", run.Id, "echo", run.Id)); out != run.Id {
+	//	log.Printf("Dock	exec	echo	[%s]	error	%s	!=	%s", ctxName, out, run.Id)
+	//	return false
+	//}
+	return true
+}
+
+func startApp(ctxName, appName, nodeName string, app *AppInfo) (string, string, error) {
 	ctx := ctxs[ctxName]
 	if ctx == nil {
-		return "", ""
+		return "", "", nil
 	}
 
 	if dockerNameFilter == nil {
@@ -68,6 +85,9 @@ func startApp(ctxName, appName, nodeName string, app *AppInfo) (string, string) 
 
 	args := make([]string, 0)
 	args = append(args, "run", "--name", dockerRunName, "-d", "--restart=always")
+	if globalArgs != "" {
+		args = append(args, strings.Split(globalArgs, " ")...)
+	}
 	if app.Cpu > 0.01 {
 		args = append(args, "--cpus", fmt.Sprintf("%.2f", app.Cpu))
 	}
@@ -81,10 +101,13 @@ func startApp(ctxName, appName, nodeName string, app *AppInfo) (string, string) 
 	tmpArgs := app.Args
 	tmpArgs = dockerVarReplacer.ReplaceAllStringFunc(tmpArgs, func(varName string) string {
 		s := ctx.Vars[varName[2:len(varName)-1]]
-		if s != nil {
-			return *s
+		if s == nil {
+			s = globalVars[varName[2:len(varName)-1]]
+			if s == nil {
+				return ""
+			}
 		}
-		return ""
+		return *s
 	})
 
 	//// 解析启动参数
@@ -102,32 +125,79 @@ func startApp(ctxName, appName, nodeName string, app *AppInfo) (string, string) 
 	if app.Command != "" {
 		args = append(args, strings.Split(app.Command, " ")...)
 	}
-	log.Print("Dock	exec	run	[", ctxName, "]	\033[32mdocker ", strings.Join(args, " "), "\033[0m")
-	id := getLastLine(shellFunc(nodeName, args...))
+	//log.Print("Dock	exec	run	[", ctxName, "]	\033[32mdocker ", strings.Join(args, " "), "\033[0m")
+	shellOut, usedTime, err := shellFunc(60000, nodeName, args...)
+	s.Info("Dock", s.Map{
+		"type":      "run",
+		"context":   ctxName,
+		"app":       appName,
+		"node":      nodeName,
+		"shell":     "docker " + strings.Join(args, " "),
+		"usedTime":  usedTime,
+		"limitTime": 60000,
+		"result":    shellOut,
+		"error":     err,
+	})
+
+	id := getLastLine(shellOut)
 	if len(id) > 12 {
 		id = id[0:12]
 	}
-	log.Print("Dock	exec	run	[", ctxName, "]	result	", id)
-	return id, dockerRunName
+	//log.Print("Dock	exec	run	[", ctxName, "]	result	", id)
+	return id, dockerRunName, err
 }
 
-func stopApp(ctxName string, run *AppStatus) bool {
+func stopApp(ctxName string, run *AppStatus) (bool, error) {
 	if run.Id == "" {
-		return true
+		return true, nil
 	}
 
-	ok := true
-	log.Printf("Dock	exec	[%s]	%s	%s	\033[31mdocker stop %s\033[0m", ctxName, run.Image, run.Node, run.Id)
-	if out := getLastLine(shellFunc(run.Node, "stop", run.Id)); out != run.Id {
-		log.Printf("Dock	exec	stop	[%s]	error	%s	!=	%s", ctxName, out, run.Id)
-		ok = false
+	stopIsOk := true
+	//log.Printf("Dock	exec	[%s]	%s	%s	\033[31mdocker stop %s\033[0m", ctxName, run.Image, run.Node, run.Id)
+	shellOut, usedTime, err := shellFunc(60000, run.Node, "stop", run.Id)
+	if out := getLastLine(shellOut); out != run.Id {
+		//log.Printf("Dock	exec	stop	[%s]	error	%s	!=	%s", ctxName, out, run.Id)
+		stopIsOk = false
 	}
+	s.Info("Dock", s.Map{
+		"type":      "stop",
+		"context":   ctxName,
+		"app":       run.Image,
+		"id":        run.Id,
+		"node":      run.Node,
+		"name":      run.Name,
+		"upTime":    run.UpTime,
+		"shell":     "docker stop " + run.Id,
+		"usedTime":  usedTime,
+		"limitTime": 60000,
+		"result":    shellOut,
+		"stopIsOk":  stopIsOk,
+		"error":     err,
+	})
 
-	log.Printf("Dock	exec	[%s]	%s	%s	\033[31mdocker rm %s\033[0m", ctxName, run.Image, run.Node, run.Id)
-	if out := getLastLine(shellFunc(run.Node, "rm", run.Id)); out != run.Id {
-		log.Printf("Dock	exec	[%s]	rm	error	%s	!=	%s", ctxName, out, run.Id)
+	//log.Printf("Dock	exec	[%s]	%s	%s	\033[31mdocker rm %s\033[0m", ctxName, run.Image, run.Node, run.Id)
+	shellOut, usedTime, _ = shellFunc(30000, run.Node, "rm", run.Id)
+	rmIsOk := true
+	if out := getLastLine(shellOut); out != run.Id {
+		//log.Printf("Dock	exec	[%s]	rm	error	%s	!=	%s", ctxName, out, run.Id)
+		rmIsOk = false
 	}
-	return ok
+	s.Info("Dock", s.Map{
+		"type":      "stop",
+		"context":   ctxName,
+		"app":       run.Image,
+		"id":        run.Id,
+		"node":      run.Node,
+		"name":      run.Name,
+		"upTime":    run.UpTime,
+		"shell":     "docker rm " + run.Id,
+		"usedTime":  usedTime,
+		"limitTime": 60000,
+		"result":    shellOut,
+		"stopIsOk":  rmIsOk,
+		"error":     err,
+	})
+	return stopIsOk, err
 }
 
 func getLastLine(out string) string {

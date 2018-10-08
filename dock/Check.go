@@ -6,9 +6,10 @@ import (
 	"strconv"
 	"log"
 	"github.com/ssgo/base"
+	"github.com/ssgo/s"
 )
 
-func makeAppRunningInfos(isAll bool) {
+func makeAppRunningInfos(isAll bool) bool {
 	// 重置运行信息
 	var makingNodes map[string]*NodeInfo
 	var makingNodeStatus map[string]*NodeStatus
@@ -28,11 +29,21 @@ func makeAppRunningInfos(isAll bool) {
 	}
 
 	// 更新 Node.UsedCpu、Node.UsedMemory、runs 信息
+	okNum := 0
 	for nodeName := range makingNodes {
 		nodeStat := NodeStatus{UsedCpu: 0, UsedMemory: 0}
-		for _, running := range getRunningApps(nodeName) {
+		runningApps, err := getRunningApps(nodeName)
+		if err != nil {
+			continue
+		}
+		okNum ++
+		for _, running := range runningApps {
 			ctx := ctxs[running.Ctx]
 			if ctx == nil {
+				continue
+			}
+
+			if !checkRun(running.Ctx, running) {
 				continue
 			}
 
@@ -82,14 +93,15 @@ func makeAppRunningInfos(isAll bool) {
 		}
 		makingNodeStatus[nodeName] = &nodeStat
 	}
+	return len(makingNodes) == 0 || okNum > 0
 }
 
-func checkContext(ctxName string) (bool, bool) {
+func checkContext(ctxName string) (bool, bool, error) {
 	changed := false
 	ctx := ctxs[ctxName]
 	runsByApp := ctxRuns[ctxName]
 	if ctx == nil {
-		return false, true
+		return false, true, nil
 	}
 	if runsByApp == nil {
 		runsByApp = map[string][]*AppStatus{}
@@ -98,17 +110,19 @@ func checkContext(ctxName string) (bool, bool) {
 
 	// 启动需要的App
 	for appName := range ctx.Apps {
-		startChanged, startSucceed := checkAppForStart(ctxName, appName)
+		startChanged, startSucceed, err := checkAppForStart(ctxName, appName)
 		if startChanged {
 			changed = true
 		}
 		if startSucceed == false {
-			return changed, false
+			return changed, false, err
 		}
 	}
 
+	var ok bool
+	var err error
 	for appName := range runsByApp {
-		if checkAppForStop(ctxName, appName) {
+		if ok, err = checkAppForStop(ctxName, appName); ok {
 			changed = true
 		}
 	}
@@ -123,22 +137,22 @@ func checkContext(ctxName string) (bool, bool) {
 
 	// TODO 根据实际负债情况进行弹性伸缩
 
-	return changed, true
+	return changed, true, err
 }
 
-func checkAppForStart(ctxName, appName string) (bool, bool) {
+func checkAppForStart(ctxName, appName string) (bool, bool, error) {
 
 	changed := false
 	ctx := ctxs[ctxName]
 	runsByApp := ctxRuns[ctxName]
 	if ctx == nil || runsByApp == nil {
-		return false, true
+		return false, true, nil
 	}
 
 	app := ctx.Apps[appName]
 	runs := runsByApp[appName]
 	if app == nil || app.Active == false {
-		return false, true
+		return false, true, nil
 	}
 
 	if runs == nil {
@@ -171,6 +185,7 @@ func checkAppForStart(ctxName, appName string) (bool, bool) {
 		}
 	}
 
+	var err error
 	for i := len(runs); i < app.Min; i++ {
 		// 如果有绑定节点优先使用
 		nodeName := ""
@@ -208,10 +223,10 @@ func checkAppForStart(ctxName, appName string) (bool, bool) {
 		var id, runName string
 		if nodes[nodeName] != nil {
 			// 不存在了的节点不执行
-			id, runName = startApp(ctxName, appName, nodeName, app)
+			id, runName, err = startApp(ctxName, appName, nodeName, app)
 			if id == "" || runName == "" {
 				// 启动失败将不执行后面的过程
-				return changed, false
+				return changed, false, err
 			}
 			changed = true
 		}
@@ -235,14 +250,14 @@ func checkAppForStart(ctxName, appName string) (bool, bool) {
 		}
 		ctx.Binds[appName] = append(ctx.Binds[appName], appendBinds...)
 	}
-	return changed, true
+	return changed, true, err
 }
 
-func checkAppForStop(ctxName, appName string) bool {
+func checkAppForStop(ctxName, appName string) (bool, error) {
 	ctx := ctxs[ctxName]
 	runsByApp := ctxRuns[ctxName]
 	if ctx == nil || runsByApp == nil {
-		return false
+		return false, nil
 	}
 	stoppingApps := stoppingCtxApps[ctxName]
 
@@ -250,6 +265,8 @@ func checkAppForStop(ctxName, appName string) bool {
 	runs := runsByApp[appName]
 	changed := false
 
+	var ok bool
+	var err error
 	if app == nil || app.Active == false {
 		changed = true
 		// 停掉已经不需要的App
@@ -259,7 +276,7 @@ func checkAppForStop(ctxName, appName string) bool {
 			leftRuns := make([]*AppStatus, 0)
 			for _, run := range runs {
 				i++
-				if stopApp(ctxName, run) == false {
+				if ok, err = stopApp(ctxName, run); ok == false {
 					// 停止失败，后续会再次尝试
 					allDone = false
 					leftRuns = append(leftRuns, run)
@@ -289,29 +306,32 @@ func checkAppForStop(ctxName, appName string) bool {
 		if len(runs) > app.Max {
 			for i := len(runs) - 1; i >= app.Max; i-- {
 				changed = true
-				if stopApp(ctxName, runs[i]) {
+
+				if ok, err = stopApp(ctxName, runs[i]); ok {
 					runs[i].Id = ""
 				}
 			}
 		}
 	}
-	return changed
+	return changed, err
 }
 
-func checkAppForStoppingNodes(ctxName, appName string) bool {
+func checkAppForStoppingNodes(ctxName, appName string) (bool, error) {
 	ctx := ctxs[ctxName]
 	runsByApp := ctxRuns[ctxName]
 	if ctx == nil || runsByApp == nil {
-		return false
+		return false, nil
 	}
 
 	changed := false
 	runs := runsByApp[appName]
+	var ok bool
+	var err error
 	if runs != nil {
 		leftRuns := make([]*AppStatus, 0)
 		for _, run := range runs {
 			if nodes[run.Node] == nil && stoppingNodes[run.Node] != nil && !strings.Contains(strings.Join(ctx.Binds[appName], " ")+" ", run.Node+" ") {
-				if stopApp(ctxName, run) == false {
+				if ok, err = stopApp(ctxName, run); ok == false {
 					// 停止失败，后续会再次尝试
 					leftRuns = append(leftRuns, run)
 				} else {
@@ -331,7 +351,7 @@ func checkAppForStoppingNodes(ctxName, appName string) bool {
 		runsByApp[appName] = leftRuns
 	}
 
-	return changed
+	return changed, err
 }
 
 func nextMinScoreNode(ctxName, appName string) string {
@@ -447,6 +467,15 @@ func showStats() {
 		}
 	}
 
+	s.Info("Dock", s.Map{
+		"type": "status",
+		"nodes": nodes,
+		"nodeStatus": nodeStatus,
+		"globalVars": globalVars,
+		"globalArgs": globalArgs,
+		"contexts": ctxs,
+		"contextRuns": ctxRuns,
+	})
 	log.Print("Status\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n>>  \n", strings.Join(outs, "\n"), "\n>>  \n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n")
 }
 

@@ -1,19 +1,22 @@
-var NodesView = function () {
-    this.html = 'views/Nodes.html'
+var GlobalView = function () {
+    this.html = 'views/Global.html'
     this.stateBinds = ['authLevel','editMode']
-    this.stateRegisters = {nodes: [this, 'setNodesData']}
-    this.refreshTid = 0
+    this.stateRegisters = {global: [this, 'setGlobalData']}
+    this.isActive = false
+    // this.refreshTid = 0
 }
 
-NodesView.prototype.onShow = function () {
+GlobalView.prototype.onShow = function () {
     var that = this
-    actions.call('nodes.list').then(function () {
+    actions.call('global.list').then(function () {
         setTimeout(that.refreshStatus, 100, that)
     })
-    this.refreshTid = setInterval(this.refreshStatus, 5000, this)
+    this.isActive = true
+    states.state.currentModule = this
+    // this.refreshTid = setInterval(this.refreshStatus, 5000, this)
 }
 
-NodesView.prototype.canHide = function () {
+GlobalView.prototype.canHide = function () {
     if (this.data.changed) {
         if (!confirm('Data has changed, do you want drop them?')) return false
         this.data.changed = false
@@ -21,38 +24,50 @@ NodesView.prototype.canHide = function () {
     return true
 }
 
-NodesView.prototype.onHide = function () {
-    clearInterval(this.refreshTid)
-    this.refreshTid = 0
+GlobalView.prototype.onHide = function () {
+    this.isActive = false
+    // clearInterval(this.refreshTid)
+    // this.refreshTid = 0
 }
 
-NodesView.prototype.setNodesData = function (data) {
-    if (data && data.nodes) {
-        data = data.nodes
+GlobalView.prototype.setGlobalData = function (data) {
+    if (data && data.global) {
+        data = data.global
+        console.log(data)
         var nodes = []
-        for (var k in data) {
-            data[k].name = k
-            nodes.push(data[k])
+        for (var k in data.nodes) {
+            data.nodes[k].name = k
+            nodes.push(data.nodes[k])
         }
+
+        var vars = []
+        for (var k in data.vars) {
+            vars.push({name: k, value: data.vars[k]})
+        }
+
         var _nodes = CP(nodes)
-        if (states.state.authLevel >= 2) {
-            nodes.push({})
-        }
+        var _vars = CP(vars)
+
+        nodes.push({})
+        vars.push({})
 
         this.setData({
             nodes: nodes,
-            _nodes: _nodes
+            vars: vars,
+            _nodes: _nodes,
+            _vars: _vars,
+            args: data.args,
         })
     }
 }
 
-NodesView.prototype.refreshStatus = function (that) {
-    actions.call('nodes.getStatus').then(function () {
+GlobalView.prototype.refreshStatus = function (that) {
+    actions.call('global.getStatus').then(function () {
         that.onRefreshStatus()
     })
 }
 
-NodesView.prototype.onRefreshStatus = function () {
+GlobalView.prototype.onRefreshStatus = function () {
     for (var k in this.data.nodes) {
         var node = this.data.nodes[k]
         if (!node.name) continue
@@ -72,7 +87,7 @@ NodesView.prototype.onRefreshStatus = function () {
     }
 }
 
-NodesView.prototype.save = function () {
+GlobalView.prototype.save = function () {
     var nodes = {}
     for (var k in this.data.nodes) {
         var node = this.data.nodes[k]
@@ -88,16 +103,25 @@ NodesView.prototype.save = function () {
         nodes[node.name.trim()] = {cpu: cpu, memory: memory}
     }
 
+    var vars = {}
+    for (var k in this.data.vars) {
+        var v = this.data.vars[k]
+        if (!v.name) {
+            continue
+        }
+        vars[v.name.trim()] = v.value
+    }
+
     var that = this
-    actions.call('nodes.save', {nodes: nodes}).then(function () {
+    actions.call('global.save', {nodes: nodes, vars: vars, args: this.data.args}).then(function () {
         that.setData({changed: false})
         that.onShow()
     }).catch(function (reason) {
-        alert('Save nodes has error: ' + reason)
+        alert('Save global has error: ' + reason)
     })
 }
 
-NodesView.prototype.check = function (event, type, idx) {
+GlobalView.prototype.check = function (event, type, idx) {
     var oldList = this.data['_' + type]
     var list = this.data[type]
     if ((idx < oldList.length && JSON.stringify(list[idx]) !== JSON.stringify(oldList[idx])) ||

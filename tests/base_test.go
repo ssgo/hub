@@ -6,10 +6,11 @@ import (
 	"time"
 	"github.com/ssgo/s"
 	"os"
-	"strings"
+	//"strings"
 	"encoding/json"
 	"crypto/sha1"
 	"encoding/hex"
+	"strings"
 )
 
 var as *s.AsyncServer
@@ -21,9 +22,10 @@ var ctxRuns map[string][]dock.AppStatus
 func TestStart(tt *testing.T) {
 	os.Setenv("dock_dataPath", "/tmp/dock")
 	os.Setenv("service_httpVersion", "2")
+	os.RemoveAll("/tmp/dock")
 	os.MkdirAll("/tmp/dock", 0700)
-	fp, _ := os.OpenFile("/tmp/dock/nodes", os.O_CREATE|os.O_WRONLY, 0600)
-	fp.Write([]byte("{\"node1\":{\"cpu\":4,\"memory\":8}}"))
+	fp, _ := os.OpenFile("/tmp/dock/global", os.O_CREATE|os.O_WRONLY, 0600)
+	fp.Write([]byte("{\"Nodes\":{\"node1\":{\"cpu\":4,\"memory\":8}}}"))
 	fp.Close()
 	fp, _ = os.OpenFile("/tmp/dock/c1", os.O_CREATE|os.O_WRONLY, 0600)
 	fp.Write([]byte("{\"name\":\"c1\", \"desc\":\"test ctx\", \"apps\": {\"app1\":{\"cpu\":1,\"memory\":1,\"min\":1,\"max\":1,\"active\":true,\"args\":\"... ${dc} ...\"}}, \"vars\":{\"dc\":\"-e 'discover_host=127.0.0.1' -e 'discover_port=6000' -e 'discover_password=hjfdasy7fdusihfyuasfs'\"}, \"binds\":{\"app1\":\"node1\"}}"))
@@ -47,8 +49,15 @@ func getStatus(ctxName string){
 	nodeStatus = map[string]*dock.NodeStatus{}
 	ctx = dock.ContextInfo{}
 	ctxRuns = map[string][]dock.AppStatus{}
-	as.Get("/nodes").To(&nodes)
-	as.Get("/nodes/status").To(&nodeStatus)
+
+	nr := dock.GlobalInfo{}
+	as.Get("/global").To(&nr)
+	nodes = nr.Nodes
+	nsr := struct{
+		Nodes map[string]*dock.NodeStatus
+	}{}
+	as.Get("/global/status").To(&nsr)
+	nodeStatus = nsr.Nodes
 	as.Get("/"+ctxName).To(&ctx)
 	rr := as.Get("/"+ctxName+"/status")
 	rr.To(&ctxRuns)
@@ -72,7 +81,7 @@ func TestBase(tt *testing.T) {
 
 	nodes["node2"] = &dock.NodeInfo{Cpu:8, Memory:16}
 	// 添加节点
-	as.Post("/nodes", s.Map{"nodes": nodes})
+	as.Post("/global", s.Map{"nodes": nodes})
 	getStatus("c1")
 	t.Test(len(nodes) == 2 &&
 		nodes["node1"] != nil && nodes["node1"].Cpu == 4 &&
@@ -93,7 +102,7 @@ func TestBaseApi(tt *testing.T) {
 
 	// post node9
 	nodes["node9"] = &dock.NodeInfo{Cpu:8, Memory:16}
-	as.Post("/nodes", s.Map{"nodes": nodes})
+	as.Post("/global", s.Map{"nodes": nodes})
 	getStatus("c1")
 	t.Test(len(nodes) == 3, "Add Nodes By API", getOut())
 
@@ -149,7 +158,7 @@ func TestBaseApi(tt *testing.T) {
 
 	// 删除 node9
 	delete(nodes, "node9")
-	as.Post("/nodes", s.Map{"nodes": nodes})
+	as.Post("/global", s.Map{"nodes": nodes})
 	time.Sleep(time.Millisecond * 100)
 	getStatus("c1")
 	t.Test(len(nodes) == 2 && len(ctx.Apps) == 4 && len(ctxRuns["app9"]) == 2 && len(ctxRuns["app8"]) == 5, "Remove Node 9 By API")

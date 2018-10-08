@@ -4,7 +4,8 @@ var ContextView = function (name) {
     this.stateBinds = ['authLevel', 'editMode']
     this.stateRegisters = {}
     this.stateRegisters['ctx_' + this.name] = [this, 'setContextData']
-    this.refreshTid = 0
+    this.isActive = false
+    // this.refreshTid = 0
 }
 
 ContextView.prototype.onShow = function () {
@@ -12,7 +13,9 @@ ContextView.prototype.onShow = function () {
     actions.call('context.getContext', {name: this.name}).then(function () {
         setTimeout(that.refreshStatus, 100, that)
     })
-    this.refreshTid = setInterval(this.refreshStatus, 5000, this)
+    this.isActive = true
+    states.state.currentModule = this
+    // this.refreshTid = setInterval(this.refreshStatus, 5000, this)
 }
 
 ContextView.prototype.canHide = function () {
@@ -24,8 +27,9 @@ ContextView.prototype.canHide = function () {
 }
 
 ContextView.prototype.onHide = function () {
-    clearInterval(this.refreshTid)
-    this.refreshTid = 0
+    this.isActive = false
+    // clearInterval(this.refreshTid)
+    // this.refreshTid = 0
 }
 
 ContextView.prototype.setContextData = function (data) {
@@ -86,7 +90,14 @@ ContextView.prototype.onRefreshStatus = function () {
         var runs = status[app.name]
         if (!runs || !(runs instanceof Array)) continue
         for (k2 in runs) {
-            runs[k2].showUpTime = runs[k2].upTime.replace('About a', '1').replace('Lessthan a', '0').replace(/Up |econds|econd|inutes|inute|ours|our|ays|ay| /g, '')
+            runs[k2].showUpTimeColor = runs[k2].upTime.indexOf('(healthy)') !== -1 ? '#090' : (runs[k2].upTime.indexOf('(') !== -1 ? '#f22' : '#00f')
+            runs[k2].showUpTime = runs[k2].upTime
+                .replace('About a', '1')
+                .replace('Lessthan a', '0')
+                .replace(/Up |econds|econd|inutes|inute|ours|our|ays|ay| /g, '')
+                .replace(/\(/g, ' ')
+                .replace(/\)/g, '')
+                .replace(/healthy/g, '✓')
         }
         app.runs = runs
         tpl.refresh(target, {item: app, index: k})
@@ -158,12 +169,12 @@ ContextView.prototype.save = function () {
         apps: apps,
         vars: vars,
         binds: binds
-    }).then(function (succeed) {
-        if (succeed) {
+    }).then(function (result) {
+        if (result.ok) {
             that.setData({changed: false})
             that.onShow()
-        }else{
-            alert('Save context has failed, maybe the container can not run')
+        } else {
+            alert('Save context has failed, '+result.error)
         }
     }).catch(function (reason) {
         alert('Save context has error: ' + reason)
@@ -199,7 +210,7 @@ ContextView.prototype.check = function (event, type, idx) {
         changed = true
     }
 
-    if (changed === true){
+    if (changed === true) {
         this.refreshView()
     }
 }

@@ -40,10 +40,7 @@
     <div class="container-fluid">
         <div id="navbar" class="navbar-collapse collapse">
             <ul class="nav navbar-nav">
-                <!--li onclick="$this.navTo('nodes')" class="{data.nav==='nodes'?'active':''}"><a style="cursor:pointer">Nodes</a></li>
-                <li each="data.contexts" onclick="$this.navTo('{index}')" class="{data.nav===index?'active':''}"><a style="cursor:pointer">{index}</a></li>
-                <li onclick="$this.newContext();"><a style="font-size:24px;margin-top:-3px;cursor:pointer">+</a></li-->
-                <li class="{data.nav==='nodes'?'active':''}"><a style="cursor:pointer" href="#/dock/nodes">Nodes</a></li>
+                <li class="{data.nav==='global'?'active':''}"><a style="cursor:pointer" href="#/dock/global">Global</a></li>
                 <li each="data.contexts" class="{data.nav===index?'active':''}"><a style="cursor:pointer" href="#/dock/{index}">{index}</a></li>
                 <li if="data.editMode" onclick="$this.newContext();"><a style="font-size:24px;margin-top:-3px;cursor:pointer">+</a></li>
             </ul>

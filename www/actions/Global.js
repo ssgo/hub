@@ -1,22 +1,22 @@
-var NodesAction = {
+var GlobalAction = {
     'list': function (ctx) {
-        ctx.http.get('/nodes').then(function (data) {
-            ctx.states.set('nodes', data)
+        ctx.http.get('/global').then(function (data) {
+            ctx.states.set('global', data)
             ctx.resolve()
         }).catch(ctx.reject)
     },
 
     'getStatus': function (ctx) {
-        ctx.http.get('/nodes/status').then(function (data) {
+        ctx.http.get('/global/status').then(function (data) {
             ctx.states.set({
-                nodeStatus: data
+                nodeStatus: data.nodes
             })
             ctx.resolve()
         }).catch(ctx.reject)
     },
 
     'save': function (ctx, args) {
-        ctx.http.post('/nodes', {nodes: args.nodes}).then(function () {
+        ctx.http.post('/global', args).then(function () {
             ctx.resolve()
         }).catch(ctx.reject)
     }

@@ -1,12 +1,12 @@
 package dock
 
 import (
+	"fmt"
 	"github.com/ssgo/s"
+	"github.com/ssgo/s/base"
 	"net/http"
 	"strings"
-	"fmt"
 	"time"
-	"github.com/ssgo/base"
 )
 
 func Registers() {
@@ -45,22 +45,21 @@ func login(request *http.Request) int {
 	return 0
 }
 
-type GlobalInfo struct{
+type GlobalInfo struct {
 	Nodes map[string]*NodeInfo
-	Vars map[string]*string
-	Args string
+	Vars  map[string]*string
+	Args  string
 }
 
 func getGlobalInfo() GlobalInfo {
 	return GlobalInfo{
 		Nodes: nodesSafely.Load().(map[string]*NodeInfo),
-		Vars: globalVars,
-		Args: globalArgs,
+		Vars:  globalVars,
+		Args:  globalArgs,
 	}
 }
 
-
-type globalStatusResult struct{
+type globalStatusResult struct {
 	Nodes map[string]*NodeStatus
 }
 
@@ -84,8 +83,8 @@ func getContextRuns(in struct{ Name string }) map[string][]*AppStatus {
 	return ctxRunsTemp[in.Name]
 }
 
-type SetResult struct{
-	Ok bool
+type SetResult struct {
+	Ok    bool
 	Error string
 }
 

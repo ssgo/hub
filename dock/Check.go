@@ -1,12 +1,12 @@
 package dock
 
 import (
-	"strings"
 	"fmt"
-	"strconv"
-	"log"
-	"github.com/ssgo/base"
 	"github.com/ssgo/s"
+	"github.com/ssgo/s/base"
+	"log"
+	"strconv"
+	"strings"
 )
 
 func makeAppRunningInfos(isAll bool) bool {
@@ -36,7 +36,7 @@ func makeAppRunningInfos(isAll bool) bool {
 		if err != nil {
 			continue
 		}
-		okNum ++
+		okNum++
 		for _, running := range runningApps {
 			ctx := ctxs[running.Ctx]
 			if ctx == nil {
@@ -85,7 +85,7 @@ func makeAppRunningInfos(isAll bool) bool {
 				continue
 			}
 			// 更新信息
-			nodeStat.TotalRuns ++
+			nodeStat.TotalRuns++
 			nodeStat.UsedCpu += app.Cpu
 			nodeStat.UsedMemory += app.Memory
 			runs = append(runs, running)
@@ -165,7 +165,7 @@ func checkAppForStart(ctxName, appName string) (bool, bool, error) {
 
 	if ctx.Binds[appName] != nil {
 		for _, b := range ctx.Binds[appName] {
-			avaliableBinds[b] ++
+			avaliableBinds[b]++
 		}
 	}
 
@@ -174,7 +174,7 @@ func checkAppForStart(ctxName, appName string) (bool, bool, error) {
 			if avaliableBinds[run.Node] > 0 {
 				run.IsBind = true
 				// 抵消已经分配的
-				avaliableBinds[run.Node] --
+				avaliableBinds[run.Node]--
 				if avaliableBinds[run.Node] <= 0 {
 					delete(avaliableBinds, run.Node)
 				}
@@ -193,7 +193,7 @@ func checkAppForStart(ctxName, appName string) (bool, bool, error) {
 		if len(avaliableBinds) > 0 {
 			for tmpNodeName := range avaliableBinds {
 				if avaliableBinds[tmpNodeName] > 0 {
-					avaliableBinds[tmpNodeName] --
+					avaliableBinds[tmpNodeName]--
 					nodeName = tmpNodeName
 					if avaliableBinds[tmpNodeName] <= 0 {
 						delete(avaliableBinds, tmpNodeName)
@@ -235,7 +235,7 @@ func checkAppForStart(ctxName, appName string) (bool, bool, error) {
 		run := AppStatus{Name: runName, Ctx: ctxName, Node: nodeName, Id: id, Image: appName, UpTime: "Up 0 minutes", Cpu: app.Cpu, Memory: app.Memory, IsBind: isBind}
 		nodeStat := nodeStatus[nodeName]
 		if nodeStat != nil {
-			nodeStat.TotalRuns ++
+			nodeStat.TotalRuns++
 			nodeStat.UsedCpu += app.Cpu
 			nodeStat.UsedMemory += app.Memory
 		}
@@ -284,7 +284,7 @@ func checkAppForStop(ctxName, appName string) (bool, error) {
 					// 停止成功
 					nodeStat := nodeStatus[run.Node]
 					if nodeStat != nil {
-						nodeStat.TotalRuns --
+						nodeStat.TotalRuns--
 						nodeStat.UsedCpu -= run.Cpu
 						nodeStat.UsedMemory -= run.Memory
 					}
@@ -338,7 +338,7 @@ func checkAppForStoppingNodes(ctxName, appName string) (bool, error) {
 					// 停止成功
 					nodeStat := stoppingNodeStatus[run.Node]
 					if nodeStat != nil {
-						nodeStat.TotalRuns --
+						nodeStat.TotalRuns--
 						nodeStat.UsedCpu -= run.Cpu
 						nodeStat.UsedMemory -= run.Memory
 					}
@@ -468,12 +468,12 @@ func showStats() {
 	}
 
 	s.Info("Dock", s.Map{
-		"type": "status",
-		"nodes": nodes,
-		"nodeStatus": nodeStatus,
-		"globalVars": globalVars,
-		"globalArgs": globalArgs,
-		"contexts": ctxs,
+		"type":        "status",
+		"nodes":       nodes,
+		"nodeStatus":  nodeStatus,
+		"globalVars":  globalVars,
+		"globalArgs":  globalArgs,
+		"contexts":    ctxs,
 		"contextRuns": ctxRuns,
 	})
 	log.Print("Status\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n>>  \n", strings.Join(outs, "\n"), "\n>>  \n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n")

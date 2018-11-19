@@ -1,17 +1,17 @@
 package dock
 
 import (
-	"time"
-	"os"
-	"github.com/ssgo/base"
-	"os/signal"
-	"syscall"
-	"strings"
-	"io/ioutil"
-	"sync"
 	"crypto/sha1"
 	"encoding/hex"
 	"github.com/ssgo/s"
+	"github.com/ssgo/s/base"
+	"io/ioutil"
+	"os"
+	"os/signal"
+	"strings"
+	"sync"
+	"syscall"
+	"time"
 )
 
 var config = struct {
@@ -25,6 +25,7 @@ var config = struct {
 
 var sleepUnit = time.Second
 var isRunning = false
+
 //var isMaking = false
 var makingLocker sync.Mutex
 
@@ -147,7 +148,7 @@ func Start() {
 	isRunning = true
 
 	s.Info("Dock", s.Map{
-		"type":    "started",
+		"type": "started",
 	})
 	//log.Print("Dock	started")
 	if startChan != nil {
@@ -230,7 +231,7 @@ func Start() {
 		stopChan <- true
 	}
 	s.Info("Dock", s.Map{
-		"type":    "stopped",
+		"type": "stopped",
 	})
 	//log.Print("Dock	stopped")
 }

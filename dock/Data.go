@@ -1,16 +1,16 @@
 package dock
 
 import (
-	"os"
 	"encoding/json"
-	"strings"
 	"fmt"
-	"github.com/ssgo/base"
-	"strconv"
-	"io"
 	"github.com/mitchellh/mapstructure"
-	"sync/atomic"
 	"github.com/ssgo/s"
+	"github.com/ssgo/s/base"
+	"io"
+	"os"
+	"strconv"
+	"strings"
+	"sync/atomic"
 )
 
 type NodeInfo struct {
@@ -53,8 +53,8 @@ type AppStatus struct {
 	IsBind bool
 }
 
-var globalVars  map[string]*string
-var globalArgs  string
+var globalVars map[string]*string
+var globalArgs string
 
 var nodes = map[string]*NodeInfo{}
 var nodeStatus = map[string]*NodeStatus{}
@@ -71,7 +71,7 @@ var ctxListSafely atomic.Value
 var ctxsSafely atomic.Value
 var ctxRunsSafely atomic.Value
 
-func newContext() (*ContextInfo) {
+func newContext() *ContextInfo {
 	ctx := new(ContextInfo)
 	ctx.Apps = make(map[string]*AppInfo)
 	ctx.Binds = make(map[string][]string)
@@ -103,8 +103,8 @@ func load(file string, to interface{}) {
 	err = decoder.Decode(&data)
 	if err != nil {
 		s.Error("Dock", s.Map{
-			"type": "loadFileFailed",
-			"file": file,
+			"type":  "loadFileFailed",
+			"file":  file,
 			"error": err.Error(),
 		})
 		//log.Printf("Dock	load file	%s	%s", file, err.Error())
@@ -113,8 +113,8 @@ func load(file string, to interface{}) {
 	err = mapstructure.WeakDecode(&data, to)
 	if err != nil {
 		s.Error("Dock", s.Map{
-			"type": "loadFileDecodeFailed",
-			"file": file,
+			"type":  "loadFileDecodeFailed",
+			"file":  file,
 			"error": err.Error(),
 		})
 		//log.Printf("Dock	load decode	%s	%s", file, err.Error())
@@ -151,8 +151,8 @@ func incr(file string) int {
 	n, err := fp.Read(buf)
 	i := 0
 	//if err != nil {
-		//fp.Close()
-		//return base.Rander.Intn(999999)
+	//fp.Close()
+	//return base.Rander.Intn(999999)
 	//}
 
 	if err == nil {

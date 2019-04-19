@@ -3,7 +3,7 @@ package dock
 import (
 	"fmt"
 	"github.com/ssgo/s"
-	"github.com/ssgo/s/base"
+	"github.com/ssgo/u"
 	"net/http"
 	"strings"
 	"time"
@@ -28,18 +28,18 @@ func Registers() {
 func auth(authLevel uint, url *string, in *map[string]interface{}, request *http.Request) bool {
 	switch authLevel {
 	case 1:
-		return request.Header.Get("Access-Token") == config.AccessToken || request.Header.Get("Access-Token") == config.ManageToken
+		return request.Header.Get("Access-Token") == dockConfig.AccessToken || request.Header.Get("Access-Token") == dockConfig.ManageToken
 	case 2:
-		return request.Header.Get("Access-Token") == config.ManageToken
+		return request.Header.Get("Access-Token") == dockConfig.ManageToken
 	}
 	return false
 }
 
 func login(request *http.Request) int {
-	if request.Header.Get("Access-Token") == config.AccessToken {
+	if request.Header.Get("Access-Token") == dockConfig.AccessToken {
 		return 1
 	}
-	if request.Header.Get("Access-Token") == config.ManageToken {
+	if request.Header.Get("Access-Token") == dockConfig.ManageToken {
 		return 2
 	}
 	return 0
@@ -171,7 +171,7 @@ func setContext(in ContextInfo) SetResult {
 	makingLocker.Unlock()
 
 	if !checkSucceed {
-		return SetResult{Error: base.StringIf(err == nil, "", err.Error())}
+		return SetResult{Error: u.StringIf(err == nil, "", err.Error())}
 	}
 
 	save(in.Name, ctxs[in.Name])

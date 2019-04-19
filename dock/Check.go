@@ -2,9 +2,10 @@ package dock
 
 import (
 	"fmt"
+	"github.com/ssgo/log"
 	"github.com/ssgo/s"
-	"github.com/ssgo/s/base"
-	"log"
+	"github.com/ssgo/u"
+	golog "log"
 	"strconv"
 	"strings"
 )
@@ -462,13 +463,13 @@ func showStats() {
 			}
 			outs = append(outs, fmt.Sprintf(">>    \033[36m%-"+strconv.Itoa(maxNameLen)+"s\033[0m  %d (%d ~ %d)  %.2f, %.2f  %s  %s	%s", appName, len(runs), app.Min, app.Max, app.Cpu, app.Memory, app.Args, app.Command, app.Memo))
 			for _, run := range runs {
-				outs = append(outs, fmt.Sprintf(">>      \033[36m%10s\033[0m  %12s  %"+strconv.Itoa(maxNodeNameLen)+"s%s  %s", run.Name, run.Id, run.Node, base.StringIf(run.IsBind, "*", ""), run.UpTime))
+				outs = append(outs, fmt.Sprintf(">>      \033[36m%10s\033[0m  %12s  %"+strconv.Itoa(maxNodeNameLen)+"s%s  %s", run.Name, run.Id, run.Node, u.StringIf(run.IsBind, "*", ""), run.UpTime))
 			}
 		}
 	}
 
-	s.Info("Dock", s.Map{
-		"type":        "status",
+	log.Info("Dock", s.Map{
+		"info":        "status",
 		"nodes":       nodes,
 		"nodeStatus":  nodeStatus,
 		"globalVars":  globalVars,
@@ -476,7 +477,7 @@ func showStats() {
 		"contexts":    ctxs,
 		"contextRuns": ctxRuns,
 	})
-	log.Print("Status\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n>>  \n", strings.Join(outs, "\n"), "\n>>  \n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n")
+	golog.Print("Status\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n>>  \n", strings.Join(outs, "\n"), "\n>>  \n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n")
 }
 
 func findIn(arr []string, str string) bool {

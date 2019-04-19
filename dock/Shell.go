@@ -1,13 +1,14 @@
 package dock
 
 import (
+	"errors"
+	"github.com/ssgo/log"
+	"github.com/ssgo/s"
+	"io"
+	"io/ioutil"
 	"os/exec"
 	"strings"
 	"time"
-	"errors"
-	"io"
-	"io/ioutil"
-	"github.com/ssgo/s"
 )
 
 var shellFunc func(timeout time.Duration, nodeName string, args ...string) (string, int, error)
@@ -28,7 +29,7 @@ func defaultShell(timeout time.Duration, nodeName string, args ...string) (strin
 		}
 	}
 	sshArgs := make([]string, 0)
-	if config.PrivateKey != "" {
+	if dockConfig.PrivateKey != "" {
 		sshArgs = append(sshArgs, "-i", "/opt/privateKey", "-o", "StrictHostKeyChecking=no")
 	}
 	sshArgs = append(sshArgs, "docker@"+sshHost, "-p", sshPort, "docker")
@@ -69,7 +70,7 @@ func defaultShell(timeout time.Duration, nodeName string, args ...string) (strin
 		err = errors.New("timeout")
 	}
 	//endTime := time.Now()
-	usedTime := int(time.Duration(time.Now().UnixNano() - startTime.UnixNano()) / time.Millisecond)
+	usedTime := int(time.Duration(time.Now().UnixNano()-startTime.UnixNano()) / time.Millisecond)
 
 	if errorBytes != nil && len(errorBytes) > 0 {
 		errStr := string(errorBytes)
@@ -79,15 +80,14 @@ func defaultShell(timeout time.Duration, nodeName string, args ...string) (strin
 	}
 
 	if err != nil {
-		s.Error("Dock", s.Map{
-			"type":        "execFailed",
+		log.Error("Dock", s.Map{
 			"node":        nodeName,
 			"command":     args[0],
 			"shell":       "ssh " + strings.Join(sshArgs, " "),
 			"failedTimes": nodeFailedTimes[nodeName],
 			"usedTime":    usedTime,
 			"limitTime":   timeout,
-			"error":       err.Error(),
+			"error":       "docker exec failed: "+err.Error(),
 		})
 		//log.Print("Dock	exec error	ssh ", strings.Join(sshArgs, " "),	"	error: ", err.Error(), "	times: ", nodeFailedTimes[nodeName], "	Used: ", time.Duration(endTime.UnixNano() - startTime.UnixNano()), " of ", timeout * time.Millisecond)
 		nodeFailedTimes[nodeName] ++

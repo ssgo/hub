@@ -1,10 +1,11 @@
 package dock
 
 import (
-	"strings"
 	"fmt"
-	"regexp"
+	"github.com/ssgo/log"
 	"github.com/ssgo/s"
+	"regexp"
+	"strings"
 )
 
 var nodeFailedTimes = map[string]int{}
@@ -127,8 +128,8 @@ func startApp(ctxName, appName, nodeName string, app *AppInfo) (string, string, 
 	}
 	//log.Print("Dock	exec	run	[", ctxName, "]	\033[32mdocker ", strings.Join(args, " "), "\033[0m")
 	shellOut, usedTime, err := shellFunc(60000, nodeName, args...)
-	s.Info("Dock", s.Map{
-		"type":      "run",
+	log.Info("Dock", s.Map{
+		"info":      "docker run",
 		"context":   ctxName,
 		"app":       appName,
 		"node":      nodeName,
@@ -159,8 +160,8 @@ func stopApp(ctxName string, run *AppStatus) (bool, error) {
 		//log.Printf("Dock	exec	stop	[%s]	error	%s	!=	%s", ctxName, out, run.Id)
 		stopIsOk = false
 	}
-	s.Info("Dock", s.Map{
-		"type":      "stop",
+	log.Info("Dock", s.Map{
+		"info":      "docker stop",
 		"context":   ctxName,
 		"app":       run.Image,
 		"id":        run.Id,
@@ -182,8 +183,8 @@ func stopApp(ctxName string, run *AppStatus) (bool, error) {
 		//log.Printf("Dock	exec	[%s]	rm	error	%s	!=	%s", ctxName, out, run.Id)
 		rmIsOk = false
 	}
-	s.Info("Dock", s.Map{
-		"type":      "stop",
+	log.Info("Dock", s.Map{
+		"info":      "docker stop",
 		"context":   ctxName,
 		"app":       run.Image,
 		"id":        run.Id,

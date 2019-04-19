@@ -1,16 +1,15 @@
 package tests
 
 import (
-	"testing"
-	"../dock"
-	"time"
-	"github.com/ssgo/s"
-	"os"
-	//"strings"
-	"encoding/json"
 	"crypto/sha1"
 	"encoding/hex"
+	"encoding/json"
+	"github.com/ssgo/dock/dock"
+	"github.com/ssgo/s"
+	"os"
 	"strings"
+	"testing"
+	"time"
 )
 
 var as *s.AsyncServer
@@ -44,7 +43,7 @@ func TestStart(tt *testing.T) {
 	as.SetGlobalHeader("Access-Token", hex.EncodeToString(sha1Maker.Sum([]byte{})))
 }
 
-func getStatus(ctxName string){
+func getStatus(ctxName string) {
 	nodes = map[string]*dock.NodeInfo{}
 	nodeStatus = map[string]*dock.NodeStatus{}
 	ctx = dock.ContextInfo{}
@@ -53,13 +52,13 @@ func getStatus(ctxName string){
 	nr := dock.GlobalInfo{}
 	as.Get("/global").To(&nr)
 	nodes = nr.Nodes
-	nsr := struct{
+	nsr := struct {
 		Nodes map[string]*dock.NodeStatus
 	}{}
 	as.Get("/global/status").To(&nsr)
 	nodeStatus = nsr.Nodes
-	as.Get("/"+ctxName).To(&ctx)
-	rr := as.Get("/"+ctxName+"/status")
+	as.Get("/" + ctxName).To(&ctx)
+	rr := as.Get("/" + ctxName + "/status")
 	rr.To(&ctxRuns)
 }
 
@@ -79,7 +78,7 @@ func TestLoad(tt *testing.T) {
 func TestBase(tt *testing.T) {
 	t := s.T(tt)
 
-	nodes["node2"] = &dock.NodeInfo{Cpu:8, Memory:16}
+	nodes["node2"] = &dock.NodeInfo{Cpu: 8, Memory: 16}
 	// 添加节点
 	as.Post("/global", s.Map{"nodes": nodes})
 	getStatus("c1")
@@ -89,7 +88,7 @@ func TestBase(tt *testing.T) {
 		"Add Nodes", getOut())
 
 	// 添加应用
-	ctx.Apps["app2"] = &dock.AppInfo{Cpu:2,Memory:4,Min:2,Max:4,Active:true,Args:"..."}
+	ctx.Apps["app2"] = &dock.AppInfo{Cpu: 2, Memory: 4, Min: 2, Max: 4, Active: true, Args: "..."}
 	as.Post("/c1", ctx)
 	getStatus("c1")
 	t.Test(len(ctx.Apps) == 2 && ctx.Apps["app2"] != nil && ctx.Apps["app2"].Min == 2 &&
@@ -101,7 +100,7 @@ func TestBaseApi(tt *testing.T) {
 	t := s.T(tt)
 
 	// post node9
-	nodes["node9"] = &dock.NodeInfo{Cpu:8, Memory:16}
+	nodes["node9"] = &dock.NodeInfo{Cpu: 8, Memory: 16}
 	as.Post("/global", s.Map{"nodes": nodes})
 	getStatus("c1")
 	t.Test(len(nodes) == 3, "Add Nodes By API", getOut())
@@ -110,7 +109,7 @@ func TestBaseApi(tt *testing.T) {
 	vv9 := "999999"
 	ctx.Vars["vv9"] = &vv9
 	ctx.Binds["app9"] = append(ctx.Binds["app9"], "node9", "node9")
-	ctx.Apps["app9"] = &dock.AppInfo{Cpu:2,Memory:2,Min:2,Max:2,Active:true,Args:"${vv9}"}
+	ctx.Apps["app9"] = &dock.AppInfo{Cpu: 2, Memory: 2, Min: 2, Max: 2, Active: true, Args: "${vv9}"}
 	as.Post("/c1", ctx)
 	getStatus("c1")
 	t.Test(len(ctx.Apps) == 3 && ctx.Apps["app9"] != nil && ctx.Apps["app9"].Min == 2 &&
@@ -119,7 +118,7 @@ func TestBaseApi(tt *testing.T) {
 		"Add App9 By API", getOut())
 
 	ctx.Binds["app9:2#2"] = append(ctx.Binds["app9"], "node9", "node9")
-	ctx.Apps["app9:2#2"] = &dock.AppInfo{Cpu:2,Memory:2,Min:2,Max:2,Active:true,Args:"${vv9}"}
+	ctx.Apps["app9:2#2"] = &dock.AppInfo{Cpu: 2, Memory: 2, Min: 2, Max: 2, Active: true, Args: "${vv9}"}
 	as.Post("/c1", ctx)
 	getStatus("c1")
 	t.Test(len(ctx.Apps) == 4 && ctx.Apps["app9:2#2"] != nil && ctx.Apps["app9:2#2"].Min == 2 &&
@@ -131,7 +130,7 @@ func TestBaseApi(tt *testing.T) {
 	vv9 = "999999-999"
 	ctx.Vars["vv9"] = &vv9
 	ctx.Binds["app9:2#3"] = append(ctx.Binds["app9"], "node9", "node9")
-	ctx.Apps["app9:2#3"] = &dock.AppInfo{Cpu:2,Memory:2,Min:2,Max:2,Active:true,Args:"${vv9}"}
+	ctx.Apps["app9:2#3"] = &dock.AppInfo{Cpu: 2, Memory: 2, Min: 2, Max: 2, Active: true, Args: "${vv9}"}
 	ctx.Apps["app9:2#2"].Active = false
 	as.Post("/c1", ctx)
 	getStatus("c1")
@@ -150,7 +149,7 @@ func TestBaseApi(tt *testing.T) {
 	getStatus("c1")
 	t.Test(len(ctx.Apps) == 3 && ctx.Apps["app9:2#2"] == nil && ctx.Binds["app9:2#2"] != nil && ctx.Apps["app9:2#3"] == nil && ctx.Binds["app9:2#3"] == nil, "Remove App 9#2&#3 By API", getOut())
 
-	ctx.Apps["app8"] = &dock.AppInfo{Cpu:2,Memory:2,Min:5,Max:5,Active:true,Args:""}
+	ctx.Apps["app8"] = &dock.AppInfo{Cpu: 2, Memory: 2, Min: 5, Max: 5, Active: true, Args: ""}
 	as.Post("/c1", ctx)
 	getStatus("c1")
 	t.Test(len(ctx.Apps) == 4 && ctx.Apps["app8"] != nil && len(ctxRuns["app8"]) == 5,
@@ -190,8 +189,8 @@ func TestBind(tt *testing.T) {
 	t := s.T(tt)
 
 	// 添加带 -v 的应用
-	ctx.Apps["app3"] = &dock.AppInfo{Cpu:1,Memory:1,Min:1,Max:1,Active:true,Args:"... -v ..."}
-	ctx.Apps["app4"] = &dock.AppInfo{Cpu:2,Memory:4,Min:2,Max:4,Active:true,Args:"... --volume ..."}
+	ctx.Apps["app3"] = &dock.AppInfo{Cpu: 1, Memory: 1, Min: 1, Max: 1, Active: true, Args: "... -v ..."}
+	ctx.Apps["app4"] = &dock.AppInfo{Cpu: 2, Memory: 4, Min: 2, Max: 4, Active: true, Args: "... --volume ..."}
 	as.Post("/c1", ctx)
 	getStatus("c1")
 	t.Test(len(ctx.Apps) == 4 && ctx.Apps["app4"] != nil && ctx.Apps["app4"].Min == 2 &&
@@ -211,15 +210,15 @@ func TestBind(tt *testing.T) {
 		"Remove App 2&3&4")
 
 	// 添加带 -v 的应用
-	ctx.Apps["app3"] = &dock.AppInfo{Cpu:1,Memory:1,Min:1,Max:1,Active:true,Args:"... -v ..."}
-	ctx.Apps["app4"] = &dock.AppInfo{Cpu:2,Memory:4,Min:2,Max:4,Active:true,Args:"... --volume ..."}
+	ctx.Apps["app3"] = &dock.AppInfo{Cpu: 1, Memory: 1, Min: 1, Max: 1, Active: true, Args: "... -v ..."}
+	ctx.Apps["app4"] = &dock.AppInfo{Cpu: 2, Memory: 4, Min: 2, Max: 4, Active: true, Args: "... --volume ..."}
 	as.Post("/c1", ctx)
 	getStatus("c1")
 	t.Test(len(ctx.Apps) == 3 && ctx.Apps["app4"] != nil &&
 		len(ctxRuns["app3"]) == 1 && app3Node == ctxRuns["app3"][0].Node &&
 		len(ctxRuns["app4"]) == 2 &&
-		(app4Node1 == ctxRuns["app4"][0].Node || app4Node1 == ctxRuns["app4"][1].Node ) &&
-		(app4Node2 == ctxRuns["app4"][0].Node || app4Node2 == ctxRuns["app4"][1].Node ),
+		(app4Node1 == ctxRuns["app4"][0].Node || app4Node1 == ctxRuns["app4"][1].Node) &&
+		(app4Node2 == ctxRuns["app4"][0].Node || app4Node2 == ctxRuns["app4"][1].Node),
 		"Add App 3&4 For Bind")
 
 	// 删除 app 2 & 3 & 4

@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/mitchellh/mapstructure"
+	"github.com/ssgo/log"
 	"github.com/ssgo/s"
-	"github.com/ssgo/s/base"
+	"github.com/ssgo/u"
 	"io"
 	"os"
 	"strconv"
@@ -91,7 +92,7 @@ func checkPath(file string) {
 }
 
 func load(file string, to interface{}) {
-	file = fmt.Sprintf("%s/%s", config.DataPath, file)
+	file = fmt.Sprintf("%s/%s", dockConfig.DataPath, file)
 	checkPath(file)
 
 	fp, err := os.Open(file)
@@ -102,27 +103,25 @@ func load(file string, to interface{}) {
 	data := map[string]interface{}{}
 	err = decoder.Decode(&data)
 	if err != nil {
-		s.Error("Dock", s.Map{
-			"type":  "loadFileFailed",
+		log.Error("Dock", s.Map{
+			"error":  "load file failed: "+err.Error(),
 			"file":  file,
-			"error": err.Error(),
 		})
 		//log.Printf("Dock	load file	%s	%s", file, err.Error())
 	}
 	fp.Close()
 	err = mapstructure.WeakDecode(&data, to)
 	if err != nil {
-		s.Error("Dock", s.Map{
-			"type":  "loadFileDecodeFailed",
+		log.Error("Dock", s.Map{
 			"file":  file,
-			"error": err.Error(),
+			"error": "load file decode failed: "+err.Error(),
 		})
 		//log.Printf("Dock	load decode	%s	%s", file, err.Error())
 	}
 }
 
 func save(file string, data interface{}) {
-	file = fmt.Sprintf("%s/%s", config.DataPath, file)
+	file = fmt.Sprintf("%s/%s", dockConfig.DataPath, file)
 	checkPath(file)
 
 	fp, err := os.OpenFile(file, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
@@ -135,24 +134,24 @@ func save(file string, data interface{}) {
 }
 
 func remove(file string) {
-	file = fmt.Sprintf("%s/%s", config.DataPath, file)
+	file = fmt.Sprintf("%s/%s", dockConfig.DataPath, file)
 	os.Remove(file)
 }
 
 func incr(file string) int {
-	file = fmt.Sprintf("%s/.incr/%s", config.DataPath, file)
+	file = fmt.Sprintf("%s/.incr/%s", dockConfig.DataPath, file)
 	checkPath(file)
 
 	fp, err := os.OpenFile(file, os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
-		return base.Rander.Intn(999999)
+		return u.GlobalRand1.Intn(999999)
 	}
 	buf := make([]byte, 20)
 	n, err := fp.Read(buf)
 	i := 0
 	//if err != nil {
 	//fp.Close()
-	//return base.Rander.Intn(999999)
+	//return u.Rander.Intn(999999)
 	//}
 
 	if err == nil {

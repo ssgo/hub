@@ -461,9 +461,11 @@ func showStats() {
 			if runs == nil {
 				continue
 			}
-			outs = append(outs, fmt.Sprintf(">>    \033[36m%-"+strconv.Itoa(maxNameLen)+"s\033[0m  %d (%d ~ %d)  %.2f, %.2f  %s  %s	%s", appName, len(runs), app.Min, app.Max, app.Cpu, app.Memory, app.Args, app.Command, app.Memo))
+			outs = append(outs, fmt.Sprintf(">>    "+
+				u.Cyan("-"+strconv.Itoa(maxNameLen)+"s")+"  %d (%d ~ %d)  %.2f, %.2f  %s  %s	%s", appName, len(runs), app.Min, app.Max, app.Cpu, app.Memory, app.Args, app.Command, app.Memo))
 			for _, run := range runs {
-				outs = append(outs, fmt.Sprintf(">>      \033[36m%10s\033[0m  %12s  %"+strconv.Itoa(maxNodeNameLen)+"s%s  %s", run.Name, run.Id, run.Node, u.StringIf(run.IsBind, "*", ""), run.UpTime))
+				outs = append(outs, fmt.Sprintf(">>      "+
+					u.Cyan("%10s")+"  %12s  %"+strconv.Itoa(maxNodeNameLen)+"s%s  %s", run.Name, run.Id, run.Node, u.StringIf(run.IsBind, "*", ""), run.UpTime))
 			}
 		}
 	}

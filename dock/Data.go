@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/mitchellh/mapstructure"
-	"github.com/ssgo/log"
-	"github.com/ssgo/s"
 	"github.com/ssgo/u"
 	"io"
 	"os"
@@ -87,7 +85,7 @@ func checkPath(file string) {
 	}
 	path := file[0:pos]
 	if _, err := os.Stat(path); err != nil {
-		os.MkdirAll(path, 0700)
+		_ = os.MkdirAll(path, 0700)
 	}
 }
 
@@ -103,20 +101,12 @@ func load(file string, to interface{}) {
 	data := map[string]interface{}{}
 	err = decoder.Decode(&data)
 	if err != nil {
-		log.Error("Dock", s.Map{
-			"error":  "load file failed: "+err.Error(),
-			"file":  file,
-		})
-		//log.Printf("Dock	load file	%s	%s", file, err.Error())
+		logError("load file failed: "+err.Error(), "file", file)
 	}
-	fp.Close()
+	_ = fp.Close()
 	err = mapstructure.WeakDecode(&data, to)
 	if err != nil {
-		log.Error("Dock", s.Map{
-			"file":  file,
-			"error": "load file decode failed: "+err.Error(),
-		})
-		//log.Printf("Dock	load decode	%s	%s", file, err.Error())
+		logError("load file decode failed: "+err.Error(), "file", file)
 	}
 }
 
@@ -129,13 +119,23 @@ func save(file string, data interface{}) {
 		return
 	}
 	b, err := json.MarshalIndent(data, "", "  ")
-	fp.Write(b)
-	fp.Close()
+	if err != nil {
+		logError(err.Error())
+	}else {
+		n, err := fp.Write(b)
+		if err != nil {
+			logError(err.Error(), "file", file, "wrote", n, data, string(b))
+		}
+	}
+	_ = fp.Close()
 }
 
 func remove(file string) {
 	file = fmt.Sprintf("%s/%s", dockConfig.DataPath, file)
-	os.Remove(file)
+	err := os.Remove(file)
+	if err != nil {
+		logError(err.Error(), "file", file)
+	}
 }
 
 func incr(file string) int {
@@ -167,8 +167,11 @@ func incr(file string) int {
 
 	i++
 	s := strconv.Itoa(i)
-	fp.Seek(0, io.SeekStart)
-	fp.Write([]byte(s))
-	fp.Close()
+	_, _ = fp.Seek(0, io.SeekStart)
+	n, err = fp.Write([]byte(s))
+	if err != nil {
+		logError(err.Error(), "file", file, "wrote", n)
+	}
+	_ = fp.Close()
 	return i
 }

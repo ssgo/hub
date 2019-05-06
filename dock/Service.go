@@ -3,7 +3,6 @@ package dock
 import (
 	"fmt"
 	"github.com/ssgo/s"
-	"github.com/ssgo/u"
 	"net/http"
 	"strings"
 	"time"
@@ -11,7 +10,7 @@ import (
 
 func Registers() {
 	s.SetAuthChecker(auth)
-	s.Static("/", "www")
+	s.Static("/", "www/")
 	s.Restful(0, "POST", "/login", login)
 
 	s.Restful(1, "GET", "/global/status", getGlobalStatus)
@@ -25,7 +24,7 @@ func Registers() {
 	s.Restful(2, "DELETE", "/{name}", removeContext)
 }
 
-func auth(authLevel uint, url *string, in *map[string]interface{}, request *http.Request) bool {
+func auth(authLevel int, url *string, in *map[string]interface{}, request *http.Request) bool {
 	switch authLevel {
 	case 1:
 		return request.Header.Get("Access-Token") == dockConfig.AccessToken || request.Header.Get("Access-Token") == dockConfig.ManageToken
@@ -171,7 +170,11 @@ func setContext(in ContextInfo) SetResult {
 	makingLocker.Unlock()
 
 	if !checkSucceed {
-		return SetResult{Error: u.StringIf(err == nil, "", err.Error())}
+		if err == nil {
+			return SetResult{Error: ""}
+		} else {
+			return SetResult{Error: err.Error()}
+		}
 	}
 
 	save(in.Name, ctxs[in.Name])

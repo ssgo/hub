@@ -2,8 +2,6 @@ package dock
 
 import (
 	"fmt"
-	"github.com/ssgo/log"
-	"github.com/ssgo/s"
 	"github.com/ssgo/u"
 	golog "log"
 	"strconv"
@@ -470,15 +468,14 @@ func showStats() {
 		}
 	}
 
-	log.Info("Dock", s.Map{
-		"info":        "status",
-		"nodes":       nodes,
-		"nodeStatus":  nodeStatus,
-		"globalVars":  globalVars,
-		"globalArgs":  globalArgs,
-		"contexts":    ctxs,
-		"contextRuns": ctxRuns,
-	})
+	logInfo("status",
+		"nodes", nodes,
+		"nodeStatus", nodeStatus,
+		"globalVars", globalVars,
+		"globalArgs", globalArgs,
+		"contexts", ctxs,
+		"contextRuns", ctxRuns,
+	)
 	golog.Print("Status\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n>>  \n", strings.Join(outs, "\n"), "\n>>  \n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n")
 }
 

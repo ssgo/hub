@@ -2,8 +2,6 @@ package dock
 
 import (
 	"errors"
-	"github.com/ssgo/log"
-	"github.com/ssgo/s"
 	"io"
 	"io/ioutil"
 	"os/exec"
@@ -80,15 +78,14 @@ func defaultShell(timeout time.Duration, nodeName string, args ...string) (strin
 	}
 
 	if err != nil {
-		log.Error("Dock", s.Map{
-			"node":        nodeName,
-			"command":     args[0],
-			"shell":       "ssh " + strings.Join(sshArgs, " "),
-			"failedTimes": nodeFailedTimes[nodeName],
-			"usedTime":    usedTime,
-			"limitTime":   timeout,
-			"error":       "docker exec failed: "+err.Error(),
-		})
+		logError("docker exec failed: "+err.Error(),
+			"node", nodeName,
+			"command", args[0],
+			"shell", "ssh "+strings.Join(sshArgs, " "),
+			"failedTimes", nodeFailedTimes[nodeName],
+			"usedTime", usedTime,
+			"limitTime", timeout,
+		)
 		//log.Print("Dock	exec error	ssh ", strings.Join(sshArgs, " "),	"	error: ", err.Error(), "	times: ", nodeFailedTimes[nodeName], "	Used: ", time.Duration(endTime.UnixNano() - startTime.UnixNano()), " of ", timeout * time.Millisecond)
 		nodeFailedTimes[nodeName] ++
 		return "", usedTime, err

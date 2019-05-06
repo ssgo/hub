@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"github.com/ssgo/config"
 	"github.com/ssgo/log"
-	"github.com/ssgo/s"
+	"github.com/ssgo/u"
 	"io/ioutil"
 	"os"
 	"os/signal"
@@ -32,6 +32,16 @@ var makingLocker sync.Mutex
 
 var startChan chan bool
 var stopChan chan bool
+
+var logger = log.New(u.ShortUniqueId())
+
+func logInfo(info string, extra ...interface{}) {
+	logger.Info("Dock: "+info, extra...)
+}
+
+func logError(error string, extra ...interface{}) {
+	logger.Error("Dock: "+error, extra...)
+}
 
 func SetSleepUnit(unit time.Duration) {
 	sleepUnit = unit
@@ -95,8 +105,7 @@ func Start() {
 	signal.Notify(closeChan, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-closeChan
-		log.Info("Dock", "info", "stopping")
-		//log.Print("Dock	stopping ...")
+		logInfo("stopping")
 		isRunning = false
 	}()
 
@@ -122,11 +131,10 @@ func Start() {
 			}
 			ctx := newContext()
 			load(fileName, &ctx)
-			log.Info("Dock", s.Map{
-				"info":    "load context",
-				"file":    fileName,
-				"context": ctx,
-			})
+			logInfo("load context",
+				"file", fileName,
+				"context", ctx,
+			)
 			//log.Println("Dock	loading	context	", fileName)
 			if ctx.Name == fileName {
 				ctxList[ctx.Name] = ctx.Desc
@@ -146,9 +154,7 @@ func Start() {
 
 	isRunning = true
 
-	log.Info("Dock", s.Map{
-		"info": "started",
-	})
+	logInfo("started")
 	//log.Print("Dock	started")
 	if startChan != nil {
 		startChan <- true
@@ -229,9 +235,7 @@ func Start() {
 	if stopChan != nil {
 		stopChan <- true
 	}
-	log.Info("Dock", s.Map{
-		"info": "stopped",
-	})
+	logInfo("stopped")
 	//log.Print("Dock	stopped")
 }
 

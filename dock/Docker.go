@@ -2,8 +2,6 @@ package dock
 
 import (
 	"fmt"
-	"github.com/ssgo/log"
-	"github.com/ssgo/s"
 	"regexp"
 	"strings"
 )
@@ -128,17 +126,27 @@ func startApp(ctxName, appName, nodeName string, app *AppInfo) (string, string, 
 	}
 	//log.Print("Dock	exec	run	[", ctxName, "]	\033[32mdocker ", strings.Join(args, " "), "\033[0m")
 	shellOut, usedTime, err := shellFunc(60000, nodeName, args...)
-	log.Info("Dock", s.Map{
-		"info":      "docker run",
-		"context":   ctxName,
-		"app":       appName,
-		"node":      nodeName,
-		"shell":     "docker " + strings.Join(args, " "),
-		"usedTime":  usedTime,
-		"limitTime": 60000,
-		"result":    shellOut,
-		"error":     err,
-	})
+	if err != nil {
+		logError("docker run failed: "+err.Error(),
+			"context", ctxName,
+			"app", appName,
+			"node", nodeName,
+			"shell", "docker "+strings.Join(args, " "),
+			"usedTime", usedTime,
+			"limitTime", 60000,
+			"result", shellOut,
+		)
+	} else {
+		logInfo("docker run",
+			"context", ctxName,
+			"app", appName,
+			"node", nodeName,
+			"shell", "docker "+strings.Join(args, " "),
+			"usedTime", usedTime,
+			"limitTime", 60000,
+			"result", shellOut,
+		)
+	}
 
 	id := getLastLine(shellOut)
 	if len(id) > 12 {
@@ -160,21 +168,35 @@ func stopApp(ctxName string, run *AppStatus) (bool, error) {
 		//log.Printf("Dock	exec	stop	[%s]	error	%s	!=	%s", ctxName, out, run.Id)
 		stopIsOk = false
 	}
-	log.Info("Dock", s.Map{
-		"info":      "docker stop",
-		"context":   ctxName,
-		"app":       run.Image,
-		"id":        run.Id,
-		"node":      run.Node,
-		"name":      run.Name,
-		"upTime":    run.UpTime,
-		"shell":     "docker stop " + run.Id,
-		"usedTime":  usedTime,
-		"limitTime": 60000,
-		"result":    shellOut,
-		"stopIsOk":  stopIsOk,
-		"error":     err,
-	})
+	if err != nil {
+		logError("docker stop failed: "+err.Error(),
+			"context", ctxName,
+			"app", run.Image,
+			"id", run.Id,
+			"node", run.Node,
+			"name", run.Name,
+			"upTime", run.UpTime,
+			"shell", "docker stop "+run.Id,
+			"usedTime", usedTime,
+			"limitTime", 60000,
+			"result", shellOut,
+			"stopIsOk", stopIsOk,
+		)
+	} else {
+		logInfo("docker stop",
+			"context", ctxName,
+			"app", run.Image,
+			"id", run.Id,
+			"node", run.Node,
+			"name", run.Name,
+			"upTime", run.UpTime,
+			"shell", "docker stop "+run.Id,
+			"usedTime", usedTime,
+			"limitTime", 60000,
+			"result", shellOut,
+			"stopIsOk", stopIsOk,
+		)
+	}
 
 	//log.Printf("Dock	exec	[%s]	%s	%s	\033[31mdocker rm %s\033[0m", ctxName, run.Image, run.Node, run.Id)
 	shellOut, usedTime, _ = shellFunc(30000, run.Node, "rm", run.Id)
@@ -183,21 +205,35 @@ func stopApp(ctxName string, run *AppStatus) (bool, error) {
 		//log.Printf("Dock	exec	[%s]	rm	error	%s	!=	%s", ctxName, out, run.Id)
 		rmIsOk = false
 	}
-	log.Info("Dock", s.Map{
-		"info":      "docker stop",
-		"context":   ctxName,
-		"app":       run.Image,
-		"id":        run.Id,
-		"node":      run.Node,
-		"name":      run.Name,
-		"upTime":    run.UpTime,
-		"shell":     "docker rm " + run.Id,
-		"usedTime":  usedTime,
-		"limitTime": 60000,
-		"result":    shellOut,
-		"stopIsOk":  rmIsOk,
-		"error":     err,
-	})
+	if err != nil {
+		logError("docker rm failed: "+err.Error(),
+			"context", ctxName,
+			"app", run.Image,
+			"id", run.Id,
+			"node", run.Node,
+			"name", run.Name,
+			"upTime", run.UpTime,
+			"shell", "docker rm "+run.Id,
+			"usedTime", usedTime,
+			"limitTime", 60000,
+			"result", shellOut,
+			"stopIsOk", rmIsOk,
+		)
+	} else {
+		logInfo("docker rm",
+			"context", ctxName,
+			"app", run.Image,
+			"id", run.Id,
+			"node", run.Node,
+			"name", run.Name,
+			"upTime", run.UpTime,
+			"shell", "docker rm "+run.Id,
+			"usedTime", usedTime,
+			"limitTime", 60000,
+			"result", shellOut,
+			"stopIsOk", rmIsOk,
+		)
+	}
 	return stopIsOk, err
 }
 

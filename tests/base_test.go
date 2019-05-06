@@ -4,6 +4,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
+	"github.com/ssgo/config"
 	"github.com/ssgo/dock/dock"
 	"github.com/ssgo/s"
 	"os"
@@ -19,16 +20,18 @@ var ctx dock.ContextInfo
 var ctxRuns map[string][]dock.AppStatus
 
 func TestStart(tt *testing.T) {
-	os.Setenv("dock_dataPath", "/tmp/dock")
-	os.Setenv("service_httpVersion", "2")
-	os.RemoveAll("/tmp/dock")
-	os.MkdirAll("/tmp/dock", 0700)
+	_ = os.Setenv("dock_dataPath", "/tmp/dock")
+	_ = os.Setenv("service_httpVersion", "2")
+	config.ResetConfigEnv()
+
+	_ = os.RemoveAll("/tmp/dock")
+	_ = os.MkdirAll("/tmp/dock", 0700)
 	fp, _ := os.OpenFile("/tmp/dock/global", os.O_CREATE|os.O_WRONLY, 0600)
-	fp.Write([]byte("{\"Nodes\":{\"node1\":{\"cpu\":4,\"memory\":8}}}"))
-	fp.Close()
+	_, _ = fp.Write([]byte("{\"Nodes\":{\"node1\":{\"cpu\":4,\"memory\":8}}}"))
+	_ = fp.Close()
 	fp, _ = os.OpenFile("/tmp/dock/c1", os.O_CREATE|os.O_WRONLY, 0600)
-	fp.Write([]byte("{\"name\":\"c1\", \"desc\":\"test ctx\", \"apps\": {\"app1\":{\"cpu\":1,\"memory\":1,\"min\":1,\"max\":1,\"active\":true,\"args\":\"... ${dc} ...\"}}, \"vars\":{\"dc\":\"-e 'discover_host=127.0.0.1' -e 'discover_port=6000' -e 'discover_password=hjfdasy7fdusihfyuasfs'\"}, \"binds\":{\"app1\":\"node1\"}}"))
-	fp.Close()
+	_, _ = fp.Write([]byte("{\"name\":\"c1\", \"desc\":\"test ctx\", \"apps\": {\"app1\":{\"cpu\":1,\"memory\":1,\"min\":1,\"max\":1,\"active\":true,\"args\":\"... ${dc} ...\"}}, \"vars\":{\"dc\":\"-e 'discover_host=127.0.0.1' -e 'discover_port=6000' -e 'discover_password=hjfdasy7fdusihfyuasfs'\"}, \"binds\":{\"app1\":\"node1\"}}"))
+	_ = fp.Close()
 
 	dock.SetShell(TestShell)
 	dock.SetSleepUnit(time.Millisecond * 5)
@@ -50,16 +53,16 @@ func getStatus(ctxName string) {
 	ctxRuns = map[string][]dock.AppStatus{}
 
 	nr := dock.GlobalInfo{}
-	as.Get("/global").To(&nr)
+	_ = as.Get("/global").To(&nr)
 	nodes = nr.Nodes
 	nsr := struct {
 		Nodes map[string]*dock.NodeStatus
 	}{}
-	as.Get("/global/status").To(&nsr)
+	_ = as.Get("/global/status").To(&nsr)
 	nodeStatus = nsr.Nodes
-	as.Get("/" + ctxName).To(&ctx)
+	_ = as.Get("/" + ctxName).To(&ctx)
 	rr := as.Get("/" + ctxName + "/status")
-	rr.To(&ctxRuns)
+	_ = rr.To(&ctxRuns)
 }
 
 func getOut() string {
@@ -71,7 +74,7 @@ func TestLoad(tt *testing.T) {
 	t := s.T(tt)
 
 	getStatus("c1")
-	t.Test(len(nodes) == 1 && nodes["node1"] != nil && nodes["node1"].Cpu == 4 && nodeStatus["node1"].TotalRuns == 1, "Load nodes", getOut())
+	t.Test(len(nodes) == 1 && nodes["node1"] != nil && nodes["node1"].Cpu == 4 && nodeStatus["node1"].TotalRuns == 1, "Load nodes", nodes, getOut())
 	t.Test(len(ctxRuns) == 1 && ctx.Apps["app1"] != nil && len(ctxRuns["app1"]) == 1 && ctxRuns["app1"][0].Node == "node1", "Load app runs", getOut())
 }
 

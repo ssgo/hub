@@ -26,7 +26,7 @@ http://xx.xx.xx.xx:8888/
 
 ## 基本配置
 
-可在项目根目录放置一个 proxy.json
+可在项目根目录放置一个 dock.json
 
 ```json
 {

@@ -447,9 +447,9 @@ func showStats() {
 			}
 		}
 
-		outs = append(outs, fmt.Sprintf(">>  \n>>  \033[7m[%s]\033[0m", ctxName))
+		outs = append(outs, fmt.Sprintf(">>  \n>>  "+u.White("[%s]"), ctxName))
 		for varName, varValue := range ctx.Vars {
-			outs = append(outs, fmt.Sprintf(">>    \033[33m$%-"+strconv.Itoa(maxNameLen-1)+"s\033[0m  %s", varName, *varValue))
+			outs = append(outs, fmt.Sprintf(">>    "+u.Yellow("$%-"+strconv.Itoa(maxNameLen-1)+"s")+"  %s", varName, *varValue))
 		}
 		for bindName, bindValues := range ctx.Binds {
 			outs = append(outs, fmt.Sprintf(">>    *%-"+strconv.Itoa(maxNameLen-1)+"s  %s", bindName, strings.Join(bindValues, ",")))

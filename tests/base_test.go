@@ -69,13 +69,19 @@ func getOut() string {
 	b, _ := json.MarshalIndent(s.Arr{nodes, nodeStatus, ctx, ctxRuns}, "", "  ")
 	return string(b)
 }
+//
+//func TestXXX(tt *testing.T) {
+//	ctx.Binds = map[string][]string{}
+//	ctx.Binds["xxx"] = []string{"aaa","bbb"}
+//	as.Post("/c1", ctx)
+//}
 
 func TestLoad(tt *testing.T) {
 	t := s.T(tt)
 
 	getStatus("c1")
 	t.Test(len(nodes) == 1 && nodes["node1"] != nil && nodes["node1"].Cpu == 4 && nodeStatus["node1"].TotalRuns == 1, "Load nodes", nodes, getOut())
-	t.Test(len(ctxRuns) == 1 && ctx.Apps["app1"] != nil && len(ctxRuns["app1"]) == 1 && ctxRuns["app1"][0].Node == "node1", "Load app runs", getOut())
+	t.Test(len(ctxRuns) == 1 && ctx.Apps["app1"] != nil && len(ctxRuns["app1"]) == 1 && ctxRuns["app1"][0].Node == "node1", "Load app runs", ctxRuns, getOut())
 }
 
 func TestBase(tt *testing.T) {

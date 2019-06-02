@@ -78,6 +78,10 @@ func newContext() *ContextInfo {
 	return ctx
 }
 
+func dataPath(names ...string) string {
+	return fmt.Sprintf("%s%c%s", dockConfig.DataPath, os.PathSeparator, strings.Join(names, string(os.PathSeparator)))
+}
+
 func checkPath(file string) {
 	pos := strings.LastIndexByte(file, '/')
 	if pos < 0 {
@@ -91,6 +95,7 @@ func checkPath(file string) {
 
 func load(file string, to interface{}) {
 	file = fmt.Sprintf("%s/%s", dockConfig.DataPath, file)
+	//file = dataPath(file)
 	checkPath(file)
 
 	fp, err := os.Open(file)
@@ -112,6 +117,7 @@ func load(file string, to interface{}) {
 
 func save(file string, data interface{}) {
 	file = fmt.Sprintf("%s/%s", dockConfig.DataPath, file)
+	//file = dataPath(file)
 	checkPath(file)
 
 	fp, err := os.OpenFile(file, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
@@ -132,6 +138,7 @@ func save(file string, data interface{}) {
 
 func remove(file string) {
 	file = fmt.Sprintf("%s/%s", dockConfig.DataPath, file)
+	//file = dataPath(file)
 	err := os.Remove(file)
 	if err != nil {
 		logError(err.Error(), "file", file)
@@ -140,6 +147,7 @@ func remove(file string) {
 
 func incr(file string) int {
 	file = fmt.Sprintf("%s/.incr/%s", dockConfig.DataPath, file)
+	//file = dataPath(".incr", file)
 	checkPath(file)
 
 	fp, err := os.OpenFile(file, os.O_CREATE|os.O_RDWR, 0600)

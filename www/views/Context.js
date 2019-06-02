@@ -184,7 +184,7 @@ ContextView.prototype.save = function () {
 ContextView.prototype.remove = function () {
     if (prompt('Please enter the context name to conform for remove') === this.name) {
         actions.call('context.remove', {name: this.name}).then(function () {
-            route.go('/dock/nodes')
+            route.go('/dock/global')
             actions.call('context.getContexts')
         }).catch(function (reason) {
             alert('Remove context has error: ' + reason)

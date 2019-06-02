@@ -57,6 +57,7 @@ GlobalView.prototype.setGlobalData = function (data) {
             _nodes: _nodes,
             _vars: _vars,
             args: data.args,
+            publicKey: data.publicKey,
         })
     }
 }

@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"os"
 	"os/signal"
-	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -19,9 +18,9 @@ var dockConfig = struct {
 	CheckInterval int
 	DataPath      string
 	//LogFile       string
-	AccessToken string
+	//AccessToken string
 	ManageToken string
-	PrivateKey  string
+	//PrivateKey  string
 }{}
 
 var sleepUnit = time.Second
@@ -69,27 +68,37 @@ func initConfig() {
 	if dockConfig.DataPath == "" {
 		dockConfig.DataPath = "/opt/data"
 	}
-	if dockConfig.PrivateKey != "" {
-		f, err := os.OpenFile("/opt/privateKey", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
-		if err == nil {
-			f.Write([]byte(strings.Replace(dockConfig.PrivateKey, ",", "\n", 100)))
-			f.Close()
+	//if dockConfig.PrivateKey != "" {
+	//	f, err := os.OpenFile("/opt/privateKey", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+	//	if err == nil {
+	//		f.Write([]byte(strings.Replace(dockConfig.PrivateKey, ",", "\n", 100)))
+	//		f.Close()
+	//	}
+	//}
+
+	pubKeyFile := dataPath(".ssh", "id_dsa.pub")
+	if !u.FileExists(pubKeyFile) {
+		priKeyFile := dataPath(".ssh", "id_dsa")
+		u.CheckPath(priKeyFile)
+		_, err := u.RunCommand("ssh-keygen", "-f", priKeyFile, "-t", "dsa", "-N", "", "-C", "ssgo/dock")
+		if err != nil {
+			logError(err.Error())
 		}
 	}
 
-	if dockConfig.AccessToken == "" {
-		dockConfig.AccessToken = "51dock"
-	}
+	//if dockConfig.AccessToken == "" {
+	//	dockConfig.AccessToken = "51dock"
+	//}
 	if dockConfig.ManageToken == "" {
 		dockConfig.ManageToken = "91dock"
 	}
 
 	sha1Maker := sha1.New()
-	sha1Maker.Write([]byte("SSGO-"))
-	sha1Maker.Write([]byte(dockConfig.AccessToken))
-	sha1Maker.Write([]byte("-Dock"))
-	dockConfig.AccessToken = hex.EncodeToString(sha1Maker.Sum([]byte{}))
-	sha1Maker.Reset()
+	//sha1Maker.Write([]byte("SSGO-"))
+	//sha1Maker.Write([]byte(dockConfig.AccessToken))
+	//sha1Maker.Write([]byte("-Dock"))
+	//dockConfig.AccessToken = hex.EncodeToString(sha1Maker.Sum([]byte{}))
+	//sha1Maker.Reset()
 	sha1Maker.Write([]byte("SSGO-"))
 	sha1Maker.Write([]byte(dockConfig.ManageToken))
 	sha1Maker.Write([]byte("-Dock"))
@@ -146,7 +155,10 @@ func Start() {
 	}
 	if makeAppRunningInfos(true) {
 		for ctxName := range ctxs {
-			checkContext(ctxName)
+			_, _, err = checkContext(ctxName)
+			if err != nil {
+				logError(err.Error())
+			}
 		}
 	}
 

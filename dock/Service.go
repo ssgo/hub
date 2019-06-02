@@ -3,6 +3,7 @@ package dock
 import (
 	"fmt"
 	"github.com/ssgo/s"
+	"github.com/ssgo/u"
 	"net/http"
 	"strings"
 	"time"
@@ -16,8 +17,8 @@ func Registers() {
 	s.Restful(1, "GET", "/global/status", getGlobalStatus)
 	s.Restful(1, "GET", "/global", getGlobalInfo)
 	s.Restful(1, "GET", "/contexts", getContextList)
-	s.Restful(1, "GET", "/{name}/status", getContextRuns)
 	s.Restful(1, "GET", "/{name}", getContext)
+	s.Restful(1, "GET", "/{name}/status", getContextRuns)
 
 	s.Restful(2, "POST", "/global", setGlobalInfo)
 	s.Restful(2, "POST", "/{name}", setContext)
@@ -26,18 +27,18 @@ func Registers() {
 
 func auth(authLevel int, url *string, in *map[string]interface{}, request *http.Request) bool {
 	switch authLevel {
-	case 1:
-		return request.Header.Get("Access-Token") == dockConfig.AccessToken || request.Header.Get("Access-Token") == dockConfig.ManageToken
-	case 2:
+	//case 1:
+	//	return request.Header.Get("Access-Token") == dockConfig.AccessToken || request.Header.Get("Access-Token") == dockConfig.ManageToken
+	case 1, 2:
 		return request.Header.Get("Access-Token") == dockConfig.ManageToken
 	}
 	return false
 }
 
 func login(request *http.Request) int {
-	if request.Header.Get("Access-Token") == dockConfig.AccessToken {
-		return 1
-	}
+	//if request.Header.Get("Access-Token") == dockConfig.AccessToken {
+	//	return 1
+	//}
 	if request.Header.Get("Access-Token") == dockConfig.ManageToken {
 		return 2
 	}
@@ -50,12 +51,15 @@ type GlobalInfo struct {
 	Args  string
 }
 
-func getGlobalInfo() GlobalInfo {
-	return GlobalInfo{
-		Nodes: nodesSafely.Load().(map[string]*NodeInfo),
-		Vars:  globalVars,
-		Args:  globalArgs,
-	}
+func getGlobalInfo() (out struct {
+	GlobalInfo
+	PublicKey string
+}) {
+	out.Nodes = nodesSafely.Load().(map[string]*NodeInfo)
+	out.Vars = globalVars
+	out.Args = globalArgs
+	out.PublicKey, _ = u.ReadFile(dataPath(".ssh", "id_dsa.pub"), 2048)
+	return
 }
 
 type globalStatusResult struct {

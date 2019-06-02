@@ -27,9 +27,10 @@ func defaultShell(timeout time.Duration, nodeName string, args ...string) (strin
 		}
 	}
 	sshArgs := make([]string, 0)
-	if dockConfig.PrivateKey != "" {
-		sshArgs = append(sshArgs, "-i", "/opt/privateKey", "-o", "StrictHostKeyChecking=no")
-	}
+	//if dockConfig.PrivateKey != "" {
+	//	sshArgs = append(sshArgs, "-i", "/opt/privateKey", "-o", "StrictHostKeyChecking=no")
+	//}
+	sshArgs = append(sshArgs, "-i", dataPath(".ssh", "id_dsa"), "-o", "StrictHostKeyChecking=no")
 	sshArgs = append(sshArgs, "docker@"+sshHost, "-p", sshPort, "docker")
 	sshArgs = append(sshArgs, args...)
 	cmd := exec.Command("ssh", sshArgs...)
@@ -46,10 +47,14 @@ func defaultShell(timeout time.Duration, nodeName string, args ...string) (strin
 		if err == nil {
 			ep, err = cmd.StderrPipe()
 			if err == nil {
-				cmd.Start()
-				bytes, err = ioutil.ReadAll(op)
-				errorBytes, _ = ioutil.ReadAll(ep)
-				cmd.Wait()
+				err = cmd.Start()
+				if err == nil {
+					bytes, err = ioutil.ReadAll(op)
+					if err == nil {
+						errorBytes, _ = ioutil.ReadAll(ep)
+					}
+					err = cmd.Wait()
+				}
 			}
 		}
 		isOk <- true
@@ -63,7 +68,7 @@ func defaultShell(timeout time.Duration, nodeName string, args ...string) (strin
 	case <-isOk:
 	case <-isTimeout:
 		if cmd.Process != nil {
-			cmd.Process.Kill()
+			_ = cmd.Process.Kill()
 		}
 		err = errors.New("timeout")
 	}

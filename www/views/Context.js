@@ -15,6 +15,10 @@ ContextView.prototype.onShow = function () {
     })
     this.isActive = true
     states.state.currentModule = this
+    // states.set({editMode: true})
+    // setTimeout(function () {
+    //     that.showConfigWindow(0)
+    // }, 100)
     // this.refreshTid = setInterval(this.refreshStatus, 5000, this)
 }
 
@@ -174,7 +178,7 @@ ContextView.prototype.save = function () {
             that.setData({changed: false})
             that.onShow()
         } else {
-            alert('Save context has failed, '+result.error)
+            alert('Save context has failed, ' + result.error)
         }
     }).catch(function (reason) {
         alert('Save context has error: ' + reason)
@@ -195,7 +199,6 @@ ContextView.prototype.remove = function () {
 ContextView.prototype.check = function (event, type, idx) {
     var oldList = this.data['_' + type]
     var list = this.data[type]
-    var changed = false
     if ((idx < oldList.length && JSON.stringify(list[idx]) !== JSON.stringify(oldList[idx])) ||
         (idx >= oldList.length && list[idx].name)) {
         list[idx].changed = true
@@ -203,14 +206,284 @@ ContextView.prototype.check = function (event, type, idx) {
             this.data.changed = true
         }
         // tpl.refresh(event.target.parentElement.parentElement, {index: idx, item: list[idx]})
-        changed = true
     }
     if (idx === list.length - 1) {
         list.push({})
-        changed = true
+        this.refreshView()
+    } else {
+        tpl.refresh(this.$('.saveBox'), {data: {changed: true}})
+        event.target.parentElement.parentElement.className = 'danger'
     }
+}
 
-    if (changed === true) {
+ContextView.prototype.checkConfig = function (type, idx) {
+    var list = this.data[type]
+    if (idx === list.length - 1) {
+        list.push({})
         this.refreshView()
     }
+}
+
+
+ContextView.prototype.showConfigWindow = function (which, index) {
+    if (!states.state.global) {
+        var that = this
+        actions.call('global.list').then(function () {
+            that.showConfigWindow(which, index)
+        })
+        return
+    }
+
+    var data = {
+        configWindowShowing: true,
+        configIsHost: false,
+        configGlobalVars: [],
+        configContextVars: [],
+        configPorts: [],
+        configVolumes: [],
+        configEnvs: [],
+        configRefVars: [],
+        configOthers: [],
+    }
+
+    for (var k in states.state.global.vars) {
+        data.configGlobalVars.push({key: '${' + k + '}', value: states.state.global.vars[k]})
+    }
+    for (var k in this.data.vars) {
+        var v = this.data.vars[k]
+        if (v.name) {
+            data.configContextVars.push({key: '${' + v.name + '}', value: v.value})
+        }
+    }
+
+    var args = ''
+    if (which==='app') {
+        this.configAppItem = this.data.apps[index]
+        this.configVarItem = null
+        args = this.configAppItem.args
+    }else if (which==='var') {
+        this.configVarItem = this.data.vars[index]
+        this.configAppItem = null
+        args = this.configVarItem.value
+    }
+    var m = praseCommandArgs(args+' ')
+    var num = m.length
+    for (var i = 0; i < m.length; i++) {
+        var v = m[i]
+        if (v === '-e') {
+            if (i < num - 1) {
+                a = m[i + 1].split('=', 2)
+                data.configEnvs.push({key: a[0], value: a[1]})
+                i++
+            }
+        } else if (v === '-p') {
+            if (i < num - 1) {
+                a = m[i + 1].split(':', 2)
+                data.configPorts.push({from: a[0], to: a[1]})
+                i++
+            }
+        } else if (v === '-v') {
+            if (i < num - 1) {
+                a = m[i + 1].split(':', 2)
+                data.configVolumes.push({from: a[0], to: a[1]})
+                i++
+            }
+        } else if (v.length > 3 && v[0] === '$' && v[1] === '{' && v[v.length - 1] === '}') {
+            data.configRefVars.push({key: v})
+        } else if (v === '--network=host') {
+            data.configIsHost = true
+        } else {
+            data.configOthers.push({value: v})
+        }
+    }
+    data.configPorts.push({})
+    data.configVolumes.push({})
+    data.configEnvs.push({})
+    data.configRefVars.push({})
+    data.configOthers.push({})
+    this.setData(data)
+}
+
+ContextView.prototype.showVarHinter = function (target, value) {
+    if (value.length > 3 && value[0] === '$' && value[1] === '{' && value[value.length - 1] === '}') {
+        var k = value.substring(2, value.length - 1)
+        value = states.state.global.vars[k] || states.state['ctx_' + this.name].vars[k]
+    }
+
+    var m = praseCommandArgs(value)
+    var num = m.length
+    var hints = []
+    for (var i = 0; i < m.length; i++) {
+        var v = m[i]
+        if (v === '-e') {
+            if (i < num - 1) {
+                a = m[i + 1].split('=', 2)
+                hints.push('-e <b>' + a[0] + '</b>=<i>' + a[1] + '</i>')
+                i++
+            }
+        } else if (v === '-p') {
+            if (i < num - 1) {
+                a = m[i + 1].split(':', 2)
+                hints.push('-p <b>' + a[0] + '</b>:<i>' + a[1] + '</i>')
+                i++
+            }
+        } else if (v === '-v') {
+            if (i < num - 1) {
+                a = m[i + 1].split(':', 2)
+                hints.push('-v <b>' + a[0] + '</b>:<i>' + a[1] + '</i>')
+                i++
+            }
+        } else if (v.length > 3 && v[0] === '$' && v[1] === '{' && v[v.length - 1] === '}') {
+            hints.push('<i>' + v + '</i>')
+        } else {
+            hints.push('<i>' + v + '</i>')
+        }
+    }
+
+    var o = this.$('.varHinter')
+    o.innerHTML = hints.join('<br/>')
+    var x = getElementLeft(target)
+    var y = getElementTop(target) + target.offsetHeight
+    if (target.nodeName === 'INPUT') {
+        y -= this.$('.configView').scrollTop
+    }
+    o.style.left = x + 'px'
+    o.style.top = y + 'px'
+    o.style.display = 'block'
+}
+
+ContextView.prototype.hideVarHinter = function (target, value) {
+    var o = this.$('.varHinter')
+    o.innerHTML = ''
+    o.style.display = 'none'
+}
+
+function getElementLeft(element) {
+    var actualLeft = element.offsetLeft;
+    var current = element.offsetParent;
+
+    while (current !== null) {
+        actualLeft += current.offsetLeft;
+        current = current.offsetParent;
+    }
+
+    return actualLeft;
+}
+
+function getElementTop(element) {
+    var actualTop = element.offsetTop;
+    var current = element.offsetParent;
+
+    while (current !== null) {
+        actualTop += current.offsetTop;
+        current = current.offsetParent;
+    }
+
+    return actualTop;
+}
+
+ContextView.prototype.saveConfig = function () {
+    var cfgs = []
+
+    if (this.data.configRefVars.length > 0) {
+        for (var d of this.data.configRefVars) {
+            if (d.key) {
+                cfgs.push(d.key)
+            }
+        }
+    }
+
+    if (this.data.configIsHost) {
+        cfgs.push('--network=host')
+    } else if (this.data.configPorts.length > 0) {
+        for (var d of this.data.configPorts) {
+            if (d.from && d.to) {
+                cfgs.push('-p ' + d.from + ':' + d.to)
+            }
+        }
+    }
+
+    if (this.data.configEnvs.length > 0) {
+        for (var d of this.data.configEnvs) {
+            if (d.key) {
+                var v = d.key + '=' + d.value
+                if (v.indexOf(' ') !== -1 && v[0] !== '"' && v[0] !== "'") {
+                    v = "'" + v.replace(/'/g, "\\'") + "'"
+                }
+                cfgs.push('-e ' + v)
+            }
+        }
+    }
+
+    if (this.data.configVolumes.length > 0) {
+        for (var d of this.data.configVolumes) {
+            if (d.from && d.to) {
+                var v = d.from + ':' + d.to
+                if (v.indexOf(' ') !== -1 && v[0] !== '"' && v[0] !== "'") {
+                    v = "'" + v.replace(/'/g, "\\'") + "'"
+                }
+                cfgs.push('-v ' + v)
+            }
+        }
+    }
+
+    if (this.data.configOthers.length > 0) {
+        for (var d of this.data.configOthers) {
+            if (d.value) {
+                cfgs.push(d.value)
+            }
+        }
+    }
+
+    if (this.configAppItem) {
+        this.configAppItem.args = cfgs.join(' ')
+        this.configAppItem.changed = true
+    }else if (this.configVarItem) {
+        this.configVarItem.value = cfgs.join(' ')
+        this.configVarItem.changed = true
+    }
+
+    this.setData({
+        changed: true,
+        configWindowShowing: false,
+    })
+}
+
+ContextView.prototype.hideConfigWindow = function () {
+    this.setData({
+        configWindowShowing: false
+    })
+}
+
+function praseCommandArgs(cmd) {
+    if (!cmd) {
+        return []
+    }
+    cmd = cmd.trim() + ' '
+    var args = []
+    var start = -1
+    var quota = null
+    for (var i = 0; i < cmd.length; i++) {
+        var c = cmd[i]
+        if (start === -1) {
+            start = i
+            if (c === '"' || c === '\'') {
+                quota = c
+            }
+        } else if (c === ' ') {
+            if (quota === null) {
+                if (cmd[start] === cmd[i - 1] && (cmd[start] === '"' || cmd[start] === '\'')) {
+                    args.push(cmd.substring(start + 1, i - 1).replace(new RegExp("\\\\'", 'g'), cmd[start]))
+                } else {
+                    args.push(cmd.substring(start, i))
+                }
+                start = -1
+            }
+        } else if (c === quota) {
+            if (i > 0 && cmd[i - 1] !== '\\') {
+                quota = null
+            }
+        }
+    }
+    return args
 }

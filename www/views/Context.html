@@ -1,154 +1,328 @@
 <div if="data.authLevel>=2" class="saveBox">
-    <button if="data.changed" class="btn btn-primary" onclick="$this.save();">Save</button>
+	<button if="data.changed" class="btn btn-primary" onclick="$this.save();">Save</button>
 </div>
 
 <div class="fullBox">
 
-    <h3 class="sub-header">Apps<span class="text-muted" style="font-size:14px;margin-left:10px">can set tag after image with "#", for example: "mysql/mysql-server:5.7#A, if setting changed can set a different tag to apply"</span>
-    </h3>
-    <div class="table-responsive">
-        <table class="table table-condensed table-hover">
-            <thead>
-            <tr>
-                <th width="20%">Image</th>
-                <th width="5%">Cpu</th>
-                <th width="5%">Mem</th>
-                <th width="5%">Min</th>
-                <th width="5%">Max</th>
-                <th>Args</th>
-                <th width="10%">Command</th>
-                <th width="10%">Memo</th>
-                <th width="3%">✓</th>
-            </tr>
-            </thead>
-            <tbody each="data.apps">
-            <tr class="{item.changed&&'danger'}" align="center">
-                <td>
-                    <input if="data.editMode" type="text" class="form-control" placeholder="Name" bind="item.name"
-                           onbind="$this.check(event, 'apps',{index})">
-                    <span class="text-muted" if="!data.editMode">{item.name}</span>
-                </td>
-                <td>
-                    <input if="data.editMode" type="text" class="form-control" placeholder="CPU" bind="item.cpu"
-                           onbind="$this.check(event, 'apps',{index})">
-                    <span class="text-muted" if="!data.editMode">{item.cpu}</span>
-                </td>
-                <td>
-                    <input if="data.editMode" type="text" class="form-control" placeholder="Mem" bind="item.memory"
-                           onbind="$this.check(event, 'apps',{index})">
-                    <span class="text-muted" if="!data.editMode">{item.memory}</span>
-                </td>
-                <td>
-                    <input if="data.editMode" type="text" class="form-control" placeholder="Min" bind="item.min"
-                           onbind="$this.check(event, 'apps',{index})">
-                    <span class="text-muted" if="!data.editMode">{item.min}</span>
-                </td>
-                <td>
-                    <input if="data.editMode" type="text" class="form-control" placeholder="Max" bind="item.max"
-                           onbind="$this.check(event, 'apps',{index})">
-                    <span class="text-muted" if="!data.editMode">{item.max}</span>
-                </td>
-                <td>
-                    <input if="data.editMode" type="text" class="form-control" placeholder="Docker Args" bind="item.args"
-                           onbind="$this.check(event, 'apps',{index})">
-                    <span class="text-muted" if="!data.editMode">{item.args}</span>
-                </td>
-                <td>
-                    <input if="data.editMode" type="text" class="form-control" placeholder="Command" bind="item.command"
-                           onbind="$this.check(event, 'apps',{index})">
-                    <span class="text-muted" if="!data.editMode">{item.command}</span>
-                </td>
-                <td>
-                    <input if="data.editMode" type="text" class="form-control" placeholder="Memo" bind="item.memo"
-                           onbind="$this.check(event, 'apps',{index})">
-                    <span class="text-muted" if="!data.editMode">{item.memo}</span>
-                </td>
-                <td>
-                    <input if="data.editMode" type="checkbox" class="form-control" bind="item.active"
-                           onbind="$this.check(event, 'apps',{index})">
-                    <span class="text-muted" if="!data.editMode" style="color:{item.active?'#090':'#f66'}">●</span>
-                </td>
-            </tr>
-            <tr>
-                <td colspan="9" class="status_box_{index}" style="padding-left:8px;font-size:14px;border:none">
-                    <div each="index2,item2 in item.runs" class="pull-left" style="min-width:160px">
-                        <span class="text-danger">{parseInt(index2)+1}</span>
-                        <span class="text-primary" style="cursor:copy" onclick="document.execCommand('copy')" onmouseover="var range=document.createRange();range.selectNode(this);window.getSelection().addRange(range);" onmouseout="window.getSelection().empty();" title="click to copy">{item2.name}</span>
-                        <br/>
-                        <span class="text-primary" style="cursor:copy;margin-left:10px" onclick="document.execCommand('copy')" onmouseover="var range=document.createRange();range.selectNode(this);window.getSelection().addRange(range);" onmouseout="window.getSelection().empty();" title="click to copy">{item2.node}{item2.isBind?'*':''}</span>
-                        <span class="text-muted" style="color:{item2.showUpTimeColor}">{item2.showUpTime}</span>
-                    </div>
-                    <div if="!item.runs" class="text-muted">No runs</div>
-                </td>
-            </tr>
-            </tbody>
-        </table>
-    </div>
+	<h3 class="sub-header">Apps<span class="text-muted" style="font-size:14px;margin-left:10px">can set tag after image with "#", for example: "mysql/mysql-server:5.7#A, if setting changed can set a different tag to apply"</span>
+	</h3>
+	<div class="table-responsive">
+		<table class="table table-condensed table-hover">
+			<thead>
+			<tr>
+				<th width="20%">Image</th>
+				<th width="5%">Cpu</th>
+				<th width="5%">Mem</th>
+				<th width="5%">Min</th>
+				<th width="5%">Max</th>
+				<th>Args</th>
+				<th width="3%"></th>
+				<th width="10%">Command</th>
+				<th width="10%">Memo</th>
+				<th width="3%">✓</th>
+			</tr>
+			</thead>
+			<tbody each="data.apps">
+			<tr class="{item.changed&&'danger'}" align="center">
+				<td>
+					<input if="data.editMode" type="text" class="form-control" placeholder="Name" bind="item.name"
+						   onbind="$this.check(event, 'apps',{index})">
+					<span class="text-muted" if="!data.editMode">{item.name}</span>
+				</td>
+				<td>
+					<input if="data.editMode" type="text" class="form-control" placeholder="CPU" bind="item.cpu"
+						   onbind="$this.check(event, 'apps',{index})">
+					<span class="text-muted" if="!data.editMode">{item.cpu}</span>
+				</td>
+				<td>
+					<input if="data.editMode" type="text" class="form-control" placeholder="Mem" bind="item.memory"
+						   onbind="$this.check(event, 'apps',{index})">
+					<span class="text-muted" if="!data.editMode">{item.memory}</span>
+				</td>
+				<td>
+					<input if="data.editMode" type="text" class="form-control" placeholder="Min" bind="item.min"
+						   onbind="$this.check(event, 'apps',{index})">
+					<span class="text-muted" if="!data.editMode">{item.min}</span>
+				</td>
+				<td>
+					<input if="data.editMode" type="text" class="form-control" placeholder="Max" bind="item.max"
+						   onbind="$this.check(event, 'apps',{index})">
+					<span class="text-muted" if="!data.editMode">{item.max}</span>
+				</td>
+				<td>
+					<input if="data.editMode" type="text" class="form-control" placeholder="Docker Args"
+						   bind="item.args"
+						   onbind="$this.check(event, 'apps',{index})">
+					<span class="text-muted" if="!data.editMode">{item.args}</span>
+				</td>
+				<td>
+					<a href="javascript:$this.showConfigWindow('app', {index});" class="glyphicon glyphicon-pencil"
+					   style="cursor: pointer;line-height: 34px;"
+					   if="item.name && data.authLevel>=2"></a>
+				</td>
+				<td>
+					<input if="data.editMode" type="text" class="form-control" placeholder="Command" bind="item.command"
+						   onbind="$this.check(event, 'apps',{index})">
+					<span class="text-muted" if="!data.editMode">{item.command}</span>
+				</td>
+				<td>
+					<input if="data.editMode" type="text" class="form-control" placeholder="Memo" bind="item.memo"
+						   onbind="$this.check(event, 'apps',{index})">
+					<span class="text-muted" if="!data.editMode">{item.memo}</span>
+				</td>
+				<td>
+					<input if="data.editMode" type="checkbox" class="form-control" bind="item.active"
+						   onbind="$this.check(event, 'apps',{index})">
+					<span class="text-muted" if="item.name && !data.editMode" style="color:{item.active?'#090':'#f66'}">●</span>
+				</td>
+			</tr>
+			<tr if="item.name">
+				<td colspan="9" class="status_box_{index}" style="padding-left:8px;font-size:14px;border:none">
+					<div each="index2,item2 in item.runs" class="pull-left"
+						 style="min-width:160px;border: 1px solid #090;background: #efe; border-radius: 5px; padding: 3px 5px;margin-right: 5px">
+						<span class="text-danger">{parseInt(index2)+1}</span>
+						<span class="text-primary" style="cursor:copy" onclick="document.execCommand('copy')"
+							  onmouseover="var range=document.createRange();range.selectNode(this);window.getSelection().addRange(range);"
+							  onmouseout="window.getSelection().empty();" title="click to copy">{item2.name}</span>
+						<br/>
+						<span class="text-primary" style="cursor:copy;margin-left:10px"
+							  onclick="document.execCommand('copy')"
+							  onmouseover="var range=document.createRange();range.selectNode(this);window.getSelection().addRange(range);"
+							  onmouseout="window.getSelection().empty();" title="click to copy">{item2.node}{item2.isBind?'*':''}</span>
+						<span class="text-muted" style="color:{item2.showUpTimeColor}">{item2.showUpTime}</span>
+					</div>
+					<div if="!item.runs" class="text-muted">No runs</div>
+				</td>
+			</tr>
+			</tbody>
+		</table>
+	</div>
 
-    <h3 class="sub-header">Vars<span class="text-muted" style="font-size:14px;margin-left:10px">var can use "${varname} in app args", for example: "-p 8001:80 ${redis_conn} -e 'SNAME=abc'"</span>
-    </h3>
-    <div class="table-responsive">
-        <table class="table table-condensed table-hover">
-            <thead>
-            <tr>
-                <th width="30%">Key</th>
-                <th>Value</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr each="data.vars" class="{item.changed&&'danger'}">
-                <td>
-                    <input if="data.editMode" type="text" class="form-control" placeholder="Name" bind="item.name"
-                           onbind="$this.check(event, 'vars',{index})">
-                    <span class="text-muted" if="!data.editMode">{item.name}</span>
-                </td>
-                <td>
-                    <input if="data.editMode" type="text" class="form-control" placeholder="Value" bind="item.value"
-                           onbind="$this.check(event, 'vars',{index})">
-                    <span class="text-muted" if="!data.editMode">{item.value}</span>
-                </td>
-            </tr>
-            </tbody>
-        </table>
-    </div>
+	<h3 class="sub-header">Vars<span class="text-muted" style="font-size:14px;margin-left:10px">var can use "${varname} in app args", for example: "-p 8001:80 ${redis_conn} -e 'SNAME=abc'"</span>
+	</h3>
+	<div class="table-responsive">
+		<table class="table table-condensed table-hover">
+			<thead>
+			<tr>
+				<th width="30%">Key</th>
+				<th>Value</th>
+				<th width="3%"></th>
+			</tr>
+			</thead>
+			<tbody>
+			<tr each="data.vars" class="{item.changed&&'danger'}">
+				<td>
+					<input if="data.editMode" type="text" class="form-control" placeholder="Name" bind="item.name"
+						   onbind="$this.check(event, 'vars',{index})">
+					<span class="text-muted" if="!data.editMode">{item.name}</span>
+				</td>
+				<td>
+					<input if="data.editMode" type="text" class="form-control" placeholder="Value" bind="item.value"
+						   onbind="$this.check(event, 'vars',{index})">
+					<span class="text-muted" style="word-break: break-all" if="!data.editMode">{item.value}</span>
+				</td>
+				<td>
+					<a href="javascript:$this.showConfigWindow('var',{index});" class="glyphicon glyphicon-pencil"
+					   style="cursor: pointer;line-height: 34px;"
+					   if="item.name && data.authLevel>=2"></a>
+				</td>
+			</tr>
+			</tbody>
+		</table>
+	</div>
 
-    <h3 class="sub-header">Binds <span class="text-muted" style="font-size:14px;margin-left:10px">multiple nodes use "," to divide, for example: 192.168.100.1,192.168.100.2,192.168.100.3</span>
-    </h3>
-    <div class="table-responsive">
-        <table class="table table-condensed table-hover">
-            <thead>
-            <tr>
-                <th width="30%">App</th>
-                <th>Nodes</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr each="data.binds" class="{item.changed&&'danger'}">
-                <td>
-                    <input if="data.editMode" type="text" class="form-control" placeholder="Name" bind="item.name"
-                           onbind="$this.check(event, 'binds',{index})">
-                    <span class="text-muted" if="!data.editMode">{item.name}</span>
-                </td>
-                <td>
-                    <input if="data.editMode" type="text" class="form-control" placeholder="Value" bind="item.value"
-                           onbind="$this.check(event, 'binds',{index})">
-                    <span class="text-muted" if="!data.editMode">{item.value}</span>
-                </td>
-            </tr>
-            </tbody>
-        </table>
-    </div>
+	<h3 class="sub-header">Binds <span class="text-muted" style="font-size:14px;margin-left:10px">multiple nodes use "," to divide, for example: 192.168.100.1,192.168.100.2,192.168.100.3</span>
+	</h3>
+	<div class="table-responsive">
+		<table class="table table-condensed table-hover">
+			<thead>
+			<tr>
+				<th width="30%">App</th>
+				<th>Nodes</th>
+			</tr>
+			</thead>
+			<tbody>
+			<tr each="data.binds" class="{item.changed&&'danger'}">
+				<td>
+					<input if="data.editMode" type="text" class="form-control" placeholder="Name" bind="item.name"
+						   onbind="$this.check(event, 'binds',{index})">
+					<span class="text-muted" if="!data.editMode">{item.name}</span>
+				</td>
+				<td>
+					<input if="data.editMode" type="text" class="form-control" placeholder="Value" bind="item.value"
+						   onbind="$this.check(event, 'binds',{index})">
+					<span class="text-muted" if="!data.editMode">{item.value}</span>
+				</td>
+			</tr>
+			</tbody>
+		</table>
+	</div>
 
-    <h3 class="sub-header">Memo</h3>
-    <div style="padding:5px">
+	<h3 class="sub-header">Memo</h3>
+	<div style="padding:5px">
         <textarea if="data.editMode" style="width:100%;height:80px" bind="data.desc"
-                  onBind="$this.setData({changed: true})"></textarea>
-        <span if="!data.editMode">{data.desc}</span>
-    </div>
+				  onBind="$this.setData({changed: true})"></textarea>
+		<span if="!data.editMode">{data.desc}</span>
+	</div>
 
-    <div align="center">
-        <br/>
-        <button if="data.editMode" class="btn btn-danger" onclick="$this.remove();">Remove</button>
-        <br/>
-    </div>
+	<div align="center">
+		<br/>
+		<button if="data.editMode" class="btn btn-danger" onclick="$this.remove();">Remove</button>
+		<br/>
+	</div>
+</div>
+
+<div if="data.configWindowShowing"
+	 style="position: absolute;top: 0;bottom: 0;left: 0;right: 0;background:rgba(0,0,0,0.5);z-index:2000">
+	<div style="position: absolute;top: 50px;bottom: 50px;left: 50px;right: 50px;background: #fff;border: 1px solid #eee;border-radius: 10px;">
+		<div style="position: absolute;top: 10px;bottom: 80px;left: 10px;width: 200px;overflow: hidden;overflow-y: auto;margin: 0;">
+			<h4 class="sub-header">Global Vars</h4>
+			<ul class="list-group" style="border-top: 1px solid #ddd; padding-top: 5px">
+				<li each="data.configGlobalVars" class="list-group-item"
+					style="cursor: pointer;height: 30px;line-height: 28px;padding: 0 10px"
+					onclick="document.execCommand('copy')"
+					onmouseover="$this.showVarHinter(this, '{item.key}');var range=document.createRange();L(this.childNodes[0]);range.selectNode(this.childNodes[0]);window.getSelection().addRange(range);"
+					onmouseout="$this.hideVarHinter();window.getSelection().empty();">{item.key}<span
+							class="glyphicon glyphicon-duplicate" style="float: right;padding: 6px 0px"></span>
+				</li>
+			</ul>
+
+			<h4 class="sub-header">Context Vars</h4>
+			<ul class="list-group" style="border-top: 1px solid #ddd; padding-top: 5px">
+				<li each="data.configContextVars" class="list-group-item"
+					style="cursor: pointer;height: 30px;line-height: 28px;padding: 0 10px"
+					onclick="document.execCommand('copy')"
+					onmouseover="$this.showVarHinter(this, '{item.key}');var range=document.createRange();L(this.childNodes[0]);range.selectNode(this.childNodes[0]);window.getSelection().addRange(range);"
+					onmouseout="$this.hideVarHinter();window.getSelection().empty();">{item.key}<span
+							class="glyphicon glyphicon-duplicate" style="float: right;padding: 6px 0px"></span>
+				</li>
+			</ul>
+		</div>
+		<div class="configView"
+			 style="position: absolute;top: 10px;bottom: 50px;left: 230px;right: 10px; border-left: 1px solid #ccc; padding-left: 20px; overflow-y: auto; padding-bottom: 200px">
+
+			<h4 class="sub-header">Reference Vars <span class="text-muted"
+														style="font-size:14px;margin-left:10px">${varName}</span></h4>
+			<div style="margin-bottom: 20px; border-top: 1px solid #ddd; padding-top: 5px">
+				<div each="data.configRefVars"
+					 style="display: inline-block; width: 160px; margin-right: 20px;margin-bottom: 8px">
+					<input type="text" class="form-control" placeholder="from" bind="item.key"
+						   onmouseover="$this.showVarHinter(this, this.value)"
+						   onmouseout="$this.hideVarHinter()"
+						   onbind="$this.checkConfig('configRefVars',{index})">
+				</div>
+			</div>
+
+			<div style="display: inline-block; background: #ddd;border: 1px solid #ddd; border-radius: 5px; padding: 0 5px;line-height: 30px">
+				<input id="{data.name}_networkChecker" type="checkbox" onchange="$this.refreshView()"
+					   bind="data.configIsHost" style="margin: 0"/>
+				<label for="{data.name}_networkChecker" style="margin: 0; cursor: pointer; user-select: none">--network=host</label>
+			</div>
+			<h4 if="!data.configIsHost" class="sub-header">Ports <span class="text-muted"
+																	   style="font-size:14px;margin-left:10px">-p from:to</span>
+			</h4>
+			<div if="!data.configIsHost" style="margin-bottom: 20px; border-top: 1px solid #ddd; padding-top: 5px">
+				<div each="data.configPorts"
+					 style="display: inline-block; margin-right: 20px;">
+					<div style="display: inline-block; width: 100px">
+						<input type="text" class="form-control" placeholder="from" bind="item.from"
+							   onbind="$this.checkConfig('configPorts',{index})">
+					</div>
+					<div style="display: inline-block; width: 100px">
+						<input type="text" class="form-control" placeholder="to" bind="item.to"
+							   onbind="$this.checkConfig('configPorts',{index})">
+					</div>
+				</div>
+			</div>
+			<div if="data.configIsHost" style="margin-bottom: 20px"></div>
+
+			<h4 class="sub-header">Environment <span class="text-muted" style="font-size:14px;margin-left:10px">-e key=value</span>
+			</h4>
+			<div class="table-responsive">
+				<table class="table table-condensed table-hover">
+					<tbody>
+					<tr each="data.configEnvs">
+						<td>
+							<input type="text" class="form-control" placeholder="key" bind="item.key"
+								   onbind="$this.checkConfig('configEnvs',{index})">
+						</td>
+						<td>
+							<input type="text" class="form-control" placeholder="value" bind="item.value"
+								   onbind="$this.checkConfig('configEnvs',{index})">
+						</td>
+					</tr>
+					</tbody>
+				</table>
+			</div>
+
+			<h4 class="sub-header">Volumes <span class="text-muted"
+												 style="font-size:14px;margin-left:10px">-v from:to</span></h4>
+			<div class="table-responsive">
+				<table class="table table-condensed table-hover">
+					<tbody>
+					<tr each="data.configVolumes">
+						<td>
+							<input type="text" class="form-control" placeholder="from" bind="item.from"
+								   onbind="$this.checkConfig('configVolumes',{index})">
+						</td>
+						<td>
+							<input type="text" class="form-control" placeholder="to" bind="item.to"
+								   onbind="$this.checkConfig('configVolumes',{index})">
+						</td>
+					</tr>
+					</tbody>
+				</table>
+			</div>
+
+			<h4 class="sub-header">Others <span class="text-muted"
+												style="font-size:14px;margin-left:10px">-p from:to</span></h4>
+			<div style="margin-bottom: 20px; border-top: 1px solid #ddd; padding-top: 5px">
+				<div each="data.configOthers"
+					 style="display: inline-block; width: 160px; margin-right: 20px;margin-bottom: 8px">
+					<input type="text" class="form-control" placeholder="option" bind="item.value"
+						   onbind="$this.checkConfig('configOthers',{index})">
+				</div>
+			</div>
+
+		</div>
+		<div align="center" style="position: absolute;bottom: 10px;left: 0;right: 0;height: 30px">
+			<button onclick="$this.saveConfig()" class="btn btn-primary" style="width:100px;">Save</button>
+			<button onclick="$this.hideConfigWindow()" class="btn btn-default" style="width:100px;">Cancel</button>
+		</div>
+	</div>
+</div>
+
+<style>
+	.varHinter {
+		padding: 10px;
+		font-size: 16px;
+		line-height: 25px;
+		font-style: italic;
+		word-break: break-all;
+		color: #666;
+		display: none;
+		position: absolute;
+		top: 100px;
+		left: 100px;
+		background: #ddd;
+		z-index: 2001;
+		min-width: 200px;
+		max-width: 500px;
+		min-height: 30px;
+		border: 1px solid #ddd;
+		border-radius: 10px;
+	}
+
+	.varHinter b {
+		color: #06c;
+		font-weight: normal;
+		font-style: normal;
+	}
+
+	.varHinter i {
+		color: #c06;
+		font-style: normal;
+	}
+</style>
+<div class="varHinter">
 </div>

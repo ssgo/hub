@@ -132,10 +132,13 @@ GlobalView.prototype.check = function (event, type, idx) {
             this.data.changed = true
         }
         // tpl.refresh(event.target.parentElement.parentElement, {index: idx, item: list[idx]})
-        this.refreshView()
+        // this.refreshView()
     }
     if (idx == list.length - 1) {
         list.push({})
         this.refreshView()
+    }else{
+        tpl.refresh(this.$('.saveBox'), {data:{changed:true}})
+        event.target.parentElement.parentElement.className = 'danger'
     }
 }

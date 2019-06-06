@@ -205,12 +205,37 @@ ContextView.prototype.check = function (event, type, idx) {
         if (this.data.changed !== true) {
             this.data.changed = true
         }
+
+        // sync bind
+        var synced = false
+        if (type==='apps' && list[idx].name && list[idx].name !== oldList[idx].name ){
+            for (var i in this.data._binds){
+                if (this.data._binds[i].name === oldList[idx].name ){
+                    this.data.binds[i].name = list[idx].name
+                    this.data.binds[i].changed = true
+                    synced = true
+                }
+            }
+        }
+
+        if (type==='binds' && list[idx].name && list[idx].name !== oldList[idx].name ){
+            for (var i in this.data._apps){
+                if (this.data._apps[i].name === oldList[idx].name ){
+                    this.data.apps[i].name = list[idx].name
+                    this.data.apps[i].changed = true
+                    synced = true
+                }
+            }
+        }
+
         // tpl.refresh(event.target.parentElement.parentElement, {index: idx, item: list[idx]})
     }
     if (idx === list.length - 1) {
         list.push({})
         this.refreshView()
-    } else {
+    } else if (synced){
+        this.refreshView()
+    }else{
         tpl.refresh(this.$('.saveBox'), {data: {changed: true}})
         event.target.parentElement.parentElement.className = 'danger'
     }

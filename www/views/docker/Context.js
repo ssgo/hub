@@ -1,6 +1,6 @@
 var ContextView = function (name) {
     this.name = name
-    this.html = 'views/Context.html'
+    this.html = 'views/docker/Context.html'
     this.stateBinds = ['authLevel', 'editMode']
     this.stateRegisters = {}
     this.stateRegisters['ctx_' + this.name] = [this, 'setContextData']

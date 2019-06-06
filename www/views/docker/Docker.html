@@ -12,7 +12,7 @@
     }
     .fullBox {
         position: absolute;
-        top: 60px;
+        top: 80px;
         left: 0;
         right: 0;
         bottom: 0;
@@ -20,11 +20,10 @@
     }
     .saveBox {
         position: absolute;
-        top: 0;
+        top: 30px;
         right: 0;
         width: 100px;
-        height: 50px;
-        margin-top: 8px;
+        margin-top: 3px;
         text-align: center;
     }
     .table {
@@ -34,17 +33,32 @@
         padding: 0;
         text-align: center;
     }
+
+    .mainNav, .topNav *{
+        min-height: 40px;
+        height: 40px;
+    }
+    .mainNav a{
+        padding: 8px 15px !important;
+        height: 35px;
+        margin-top: 5px;
+    }
+    .mainNav .active > a{
+        background: #fff !important;
+        color: #333 !important;
+        border-bottom: #eee !important;
+    }
 </style>
 
-<nav class="navbar navbar-inverse navbar-fixed-top" style="right: 100px; border-radius: 0 0 5px 0">
+<nav class="mainNav navbar navbar-inverse navbar-fixed-top" style="right: 100px; top: 30px; border-radius: 0 0 5px 0; border-bottom: 0; border-top: 1px solid #222;">
     <div class="container-fluid">
         <div id="navbar" class="navbar-collapse collapse">
             <ul class="nav navbar-nav">
-                <li class="{data.nav==='global'?'active':''}"><a style="cursor:pointer" href="#/dock/global">Global</a></li>
-                <li each="data.contexts" class="{data.nav===index?'active':''}"><a style="cursor:pointer" href="#/dock/{index}">{index}</a></li>
+                <li class="{data.nav==='global'?'active':''}"><a style="cursor:pointer" href="#/docker/global">Global</a></li>
+                <li each="data.contexts" class="{data.nav===index?'active':''}"><a style="cursor:pointer" href="#/docker/{index}">{index}</a></li>
                 <li if="data.editMode" onclick="$this.newContext();"><a style="font-size:24px;margin-top:-3px;cursor:pointer">+</a></li>
             </ul>
-            <div if="data.authLevel===2" class="btn-group btn-group-sm pull-right" role="group" style="margin-top: 10px">
+            <div if="data.authLevel===2" class="btn-group btn-group-sm pull-right" role="group" style="margin-top: 3px; margin-right: -5px;">
                 <button onclick="states.set({editMode:false})" type="button" class="btn {data.editMode===true?'btn-default':'btn-primary active'}">View</button>
                 <button onclick="states.set({editMode:true})" type="button" class="btn {data.editMode===true?'btn-primary active':'btn-default'}">Edit</button>
             </div>

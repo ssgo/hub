@@ -1,5 +1,5 @@
 var GlobalView = function () {
-    this.html = 'views/Global.html'
+    this.html = 'views/docker/Global.html'
     this.stateBinds = ['authLevel','editMode']
     this.stateRegisters = {global: [this, 'setGlobalData']}
     this.isActive = false

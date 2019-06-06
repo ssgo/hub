@@ -1,5 +1,5 @@
-var DockView = {
-    html: 'views/Dock.html',
+var DockerView = {
+    html: 'views/docker/Docker.html',
     stateBinds: ['contexts', 'authLevel', 'editMode'],
 
     getSubView: function (subName) {
@@ -14,12 +14,12 @@ var DockView = {
         if (nextPath) {
             this.data.nav = nextPath.name
         }
-        route.bind('dock.*', this)
+        route.bind('docker.*', this)
         actions.call('context.getContexts')
     },
 
     onHide: function () {
-        route.unbind('dock.*', this)
+        route.unbind('docker.*', this)
     },
 
     onRoute: function (data) {
@@ -39,7 +39,7 @@ var DockView = {
                 binds: {}
             }).then(function () {
                 that.setData({contexts: that.data.contexts}).then(function () {
-                    route.go('/dock/' + name)
+                    route.go('/docker/' + name)
                 })
             }).catch(function (reason) {
                 alert('Create context has error: ' + reason)
@@ -51,6 +51,6 @@ var DockView = {
 
     // navTo: function (path) {
     //     // this.setData({nav: path})
-    //     route.go('/dock/' + path)
+    //     route.go('/docker/' + path)
     // }
 }

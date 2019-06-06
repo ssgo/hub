@@ -34,8 +34,8 @@ route.Root = {
         switch (subName) {
             case 'login':
                 return LoginView
-            case 'dock':
-                return DockView
+            case 'docker':
+                return DockerView
         }
     }
 }
@@ -44,10 +44,15 @@ var startRoute = location.hash ? location.hash.substring(1) : ''
 route.bindHash()
 states.bind('logined', function (data) {
     if (data.logined) {
+        var navs = $$('.navbar-nav > li')
         if (!startRoute || /^\/login/.test(startRoute)) {
-            route.go('/dock/global')
+            route.go('/docker/global')
         } else {
             route.go(startRoute)
+        }
+
+        if (route._prevPaths.length > 0) {
+            setNavStatus($('.' + route._prevPaths[0].name + 'Nav'))
         }
     } else {
         route.go('/login')
@@ -55,8 +60,7 @@ states.bind('logined', function (data) {
 })
 
 window.addEventListener('load', function () {
-    actions.call('user.login', {accessToken: sessionStorage.accessToken}).catch(function (reason) {
-    })
+    actions.call('user.login', {accessToken: sessionStorage.accessToken})
 })
 
 setInterval(function () {
@@ -65,3 +69,11 @@ setInterval(function () {
         m.refreshStatus(m)
     }
 }, 5000, this)
+
+function setNavStatus(target) {
+    for (var li of $$('.topNav li')) {
+        li.className = ''
+    }
+    if(!target) target = $('.navbar-nav > li')
+    target.className = 'active'
+}

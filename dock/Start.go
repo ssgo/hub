@@ -34,6 +34,9 @@ var stopChan chan bool
 
 var logger = log.New(u.ShortUniqueId())
 
+//var installToken = u.ShortUniqueId()
+var installToken = "eqWTGOckcbi"
+
 func logInfo(info string, extra ...interface{}) {
 	logger.Info("Dock: "+info, extra...)
 }
@@ -93,20 +96,19 @@ func initConfig() {
 		dockConfig.ManageToken = "91dock"
 	}
 
-	sha1Maker := sha1.New()
-	//sha1Maker.Write([]byte("SSGO-"))
-	//sha1Maker.Write([]byte(dockConfig.AccessToken))
-	//sha1Maker.Write([]byte("-Dock"))
-	//dockConfig.AccessToken = hex.EncodeToString(sha1Maker.Sum([]byte{}))
-	//sha1Maker.Reset()
-	sha1Maker.Write([]byte("SSGO-"))
-	sha1Maker.Write([]byte(dockConfig.ManageToken))
-	sha1Maker.Write([]byte("-Dock"))
-	dockConfig.ManageToken = hex.EncodeToString(sha1Maker.Sum([]byte{}))
+	dockConfig.ManageToken = EncodeToken(dockConfig.ManageToken)
 
 	if shellFunc == nil {
 		shellFunc = defaultShell
 	}
+}
+
+func EncodeToken(token string) string {
+	sha1Maker := sha1.New()
+	sha1Maker.Write([]byte("SSGO-"))
+	sha1Maker.Write([]byte(token))
+	sha1Maker.Write([]byte("-Dock"))
+	return hex.EncodeToString(sha1Maker.Sum([]byte{}))
 }
 
 func Start() {
@@ -144,7 +146,7 @@ func Start() {
 				"file", fileName,
 				"context", ctx,
 			)
-			//log.Println("Dock	loading	context	", fileName)
+			//fmt.Println("Dock	loading	context	", fileName)
 			if ctx.Name == fileName {
 				ctxList[ctx.Name] = ctx.Desc
 				ctxs[ctx.Name] = ctx

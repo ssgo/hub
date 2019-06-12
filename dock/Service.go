@@ -20,26 +20,69 @@ func Registers() {
 	s.Restful(1, "GET", "/{name}", getContext)
 	s.Restful(1, "GET", "/{name}/status", getContextRuns)
 
-	s.Restful(2, "POST", "/global", setGlobalInfo)
+	s.Restful(3, "POST", "/global", setGlobalInfo)
 	s.Restful(2, "POST", "/{name}", setContext)
-	s.Restful(2, "DELETE", "/{name}", removeContext)
+	s.Restful(3, "DELETE", "/{name}", removeContext)
+
+	s.Restful(9, "GET", "/install/{token}", getNodeInstaller)
 }
 
 func auth(authLevel int, url *string, in *map[string]interface{}, request *http.Request) bool {
-	switch authLevel {
-	//case 1:
-	//	return request.Header.Get("Access-Token") == dockConfig.AccessToken || request.Header.Get("Access-Token") == dockConfig.ManageToken
-	case 1, 2:
-		return request.Header.Get("Access-Token") == dockConfig.ManageToken
+	token := request.Header.Get("Access-Token")
+	switch (authLevel) {
+	case 1:
+		return authManage(token) || authAnyContext(token)
+	case 2:
+		return authManage(token) || authContext(token, u.String((*in)["name"]))
+	case 3:
+		return authManage(token)
+	case 9:
+		return (*in)["token"] == installToken
+	}
+	return false
+}
+
+func authManage(token string) bool {
+	return token != "" && token == dockConfig.ManageToken
+}
+
+func authContext(token, contextName string) bool {
+	if token == "" {
+		return false
+	}
+	ctxs := ctxsSafely.Load().(map[string]*ContextInfo)
+	for ctxName := range ctxListSafely.Load().(map[string]string) {
+		if ctxName == contextName {
+			ctx := ctxs[ctxName]
+			return EncodeToken(ctx.Token) == token
+		}
+	}
+	return false
+}
+
+func authAnyContext(token string) bool {
+	if token == "" {
+		return false
+	}
+	ctxs := ctxsSafely.Load().(map[string]*ContextInfo)
+	for ctxName := range ctxListSafely.Load().(map[string]string) {
+		ctx := ctxs[ctxName]
+		if EncodeToken(ctx.Token) == token {
+			return true
+		}
 	}
 	return false
 }
 
 func login(request *http.Request) int {
+	token := request.Header.Get("Access-Token")
 	//if request.Header.Get("Access-Token") == dockConfig.AccessToken {
 	//	return 1
 	//}
-	if request.Header.Get("Access-Token") == dockConfig.ManageToken {
+	if authManage(token) {
+		return 3
+	}
+	if authAnyContext(token) {
 		return 2
 	}
 	return 0
@@ -54,16 +97,48 @@ type GlobalInfo struct {
 func getGlobalInfo() (out struct {
 	GlobalInfo
 	PublicKey string
+	InstallToken string
 }) {
 	out.Nodes = nodesSafely.Load().(map[string]*NodeInfo)
 	out.Vars = globalVars
 	out.Args = globalArgs
 	out.PublicKey, _ = u.ReadFile(dataPath(".ssh", "id_dsa.pub"), 2048)
+	out.InstallToken = installToken
 	return
 }
 
 type globalStatusResult struct {
 	Nodes map[string]*NodeStatus
+}
+
+func getNodeInstaller() string {
+	publicKey, _ := u.ReadFile(dataPath(".ssh", "id_dsa.pub"), 2048)
+	publicKey = strings.TrimSpace(publicKey)
+	return `
+echo "# creating doker user ..."
+useradd docker -g docker
+
+echo "# installing limit-docker ..."
+cat > /home/docker/limit-docker << EOF
+cmdarr=(\$SSH_ORIGINAL_COMMAND)
+cmd=\${cmdarr[0]}
+if [ \$cmd != "docker" ];then
+    echo "\$cmd is not allow"
+    exit
+fi
+\$SSH_ORIGINAL_COMMAND
+EOF
+
+echo "# installing ssh key ..."
+mkdir /home/docker/.ssh
+echo 'command="/home/docker/limit-docker",no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty `+publicKey+`' > /home/docker/.ssh/authorized_keys
+chmod 500 /home/docker/.ssh
+chmod 400 /home/docker/.ssh/authorized_keys
+chown -R docker:docker /home/docker/.ssh
+chmod +x /home/docker/limit-docker
+
+echo "# done"
+`
 }
 
 func getGlobalStatus() globalStatusResult {
@@ -72,8 +147,22 @@ func getGlobalStatus() globalStatusResult {
 	}
 }
 
-func getContextList() map[string]string {
-	return ctxListSafely.Load().(map[string]string)
+func getContextList(request *http.Request) map[string]string {
+	list := ctxListSafely.Load().(map[string]string)
+	token := request.Header.Get("Access-Token")
+	if authManage(token) {
+		return list
+	} else {
+		ctxs := ctxsSafely.Load().(map[string]*ContextInfo)
+		out := map[string]string{}
+		for k, v := range list {
+			ctx := ctxs[k]
+			if EncodeToken(ctx.Token) == token {
+				out[k] = v
+			}
+		}
+		return out
+	}
 }
 
 func getContext(in struct{ Name string }) *ContextInfo {
@@ -135,6 +224,10 @@ func setContext(in ContextInfo) SetResult {
 	// not support - / , because docker id need -
 	if in.Name == "" || in.Name == "global" || in.Name == "nodes" || strings.IndexByte(in.Name, '-') != -1 || strings.IndexByte(in.Name, '/') != -1 {
 		return SetResult{Error: "bad name"}
+	}
+
+	if in.Token == "" {
+		in.Token = u.ShortUniqueId()
 	}
 
 	makingLocker.Lock()

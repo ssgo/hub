@@ -67,6 +67,7 @@ ContextView.prototype.setContextData = function (data) {
         this.setData({
             name: data.name,
             desc: data.desc,
+            token: data.token,
             vars: vars,
             binds: binds,
             apps: apps,
@@ -170,6 +171,7 @@ ContextView.prototype.save = function () {
     actions.call('context.save', {
         name: this.name.trim(),
         desc: this.data.desc,
+        token: this.data.token,
         apps: apps,
         vars: vars,
         binds: binds

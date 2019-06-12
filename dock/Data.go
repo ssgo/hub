@@ -25,6 +25,7 @@ type NodeStatus struct {
 type ContextInfo struct {
 	Name  string
 	Desc  string
+	Token string
 	Vars  map[string]*string
 	Binds map[string][]string
 	Apps  map[string]*AppInfo
@@ -127,7 +128,7 @@ func save(file string, data interface{}) {
 	b, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		logError(err.Error())
-	}else {
+	} else {
 		n, err := fp.Write(b)
 		if err != nil {
 			logError(err.Error(), "file", file, "wrote", n, data, string(b))

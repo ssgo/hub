@@ -3,11 +3,15 @@ var GlobalView = function () {
     this.stateBinds = ['authLevel','editMode']
     this.stateRegisters = {global: [this, 'setGlobalData']}
     this.isActive = false
+    this.data = {host: location.host, protocol: location.protocol}
     // this.refreshTid = 0
 }
 
 GlobalView.prototype.onShow = function () {
     var that = this
+    if (this.data.authLevel === 2 && states.state.editMode === true){
+        states.set({editMode:false})
+    }
     actions.call('global.list').then(function () {
         setTimeout(that.refreshStatus, 100, that)
     })
@@ -33,7 +37,6 @@ GlobalView.prototype.onHide = function () {
 GlobalView.prototype.setGlobalData = function (data) {
     if (data && data.global) {
         data = data.global
-        console.log(data)
         var nodes = []
         for (var k in data.nodes) {
             data.nodes[k].name = k
@@ -58,6 +61,7 @@ GlobalView.prototype.setGlobalData = function (data) {
             _vars: _vars,
             args: data.args,
             publicKey: data.publicKey,
+            installToken: data.installToken,
         })
     }
 }

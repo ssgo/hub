@@ -473,7 +473,7 @@ func showStats() {
 		"nodeStatus", nodeStatus,
 		"globalVars", globalVars,
 		"globalArgs", globalArgs,
-		"contexts", ctxs,
+		"contexts", ctxsSafely.Load(),
 		"contextRuns", ctxRuns,
 	)
 	golog.Print("Status\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n>>  \n", strings.Join(outs, "\n"), "\n>>  \n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n")

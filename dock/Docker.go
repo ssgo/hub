@@ -12,7 +12,7 @@ var dockerVarReplacer *regexp.Regexp
 
 func getRunningApps(nodeName string) ([]*AppStatus, error) {
 	runs := make([]*AppStatus, 0)
-	out, _, err := shellFunc(15000, nodeName, "ps", "--format", "'{{.ID}},{{.Names}},{{.Image}},{{.Status}}'")
+	out, _, err := shellFunc(15000, nodeName, "ps", "--format", "{{.ID}},{{.Names}},{{.Image}},{{.Status}}")
 	if err != nil {
 		return nil, err
 	}

@@ -198,20 +198,20 @@ func TestBind(tt *testing.T) {
 	t := s.T(tt)
 
 	// 添加带 -v 的应用
-	ctx.Apps["app3"] = &dock.AppInfo{Cpu: 1, Memory: 1, Min: 1, Max: 1, Active: true, Args: "... -v ..."}
+	ctx.Apps["app3:0.1"] = &dock.AppInfo{Cpu: 1, Memory: 1, Min: 1, Max: 1, Active: true, Args: "... -v ..."}
 	ctx.Apps["app4"] = &dock.AppInfo{Cpu: 2, Memory: 4, Min: 2, Max: 4, Active: true, Args: "... --volume ..."}
 	as.Post("/c1", ctx)
 	getStatus("c1")
 	t.Test(len(ctx.Apps) == 4 && ctx.Apps["app4"] != nil && ctx.Apps["app4"].Min == 2 &&
-		len(ctxRuns["app3"]) == 1 && len(ctxRuns["app4"]) == 2,
+		len(ctxRuns["app3:0.1"]) == 1 && len(ctxRuns["app4"]) == 2,
 		"Add App 3&4 With -v")
-	app3Node := ctxRuns["app3"][0].Node
+	app3Node := ctxRuns["app3:0.1"][0].Node
 	app4Node1 := ctxRuns["app4"][0].Node
 	app4Node2 := ctxRuns["app4"][1].Node
 
 	// 删除 app 2 & 3 & 4
 	delete(ctx.Apps, "app2")
-	delete(ctx.Apps, "app3")
+	delete(ctx.Apps, "app3:0.1")
 	delete(ctx.Apps, "app4")
 	as.Post("/c1", ctx)
 	getStatus("c1")
@@ -219,25 +219,38 @@ func TestBind(tt *testing.T) {
 		"Remove App 2&3&4")
 
 	// 添加带 -v 的应用
-	ctx.Apps["app3"] = &dock.AppInfo{Cpu: 1, Memory: 1, Min: 1, Max: 1, Active: true, Args: "... -v ..."}
+	ctx.Apps["app3:0.1"] = &dock.AppInfo{Cpu: 1, Memory: 1, Min: 1, Max: 1, Active: true, Args: "... -v ..."}
 	ctx.Apps["app4"] = &dock.AppInfo{Cpu: 2, Memory: 4, Min: 2, Max: 4, Active: true, Args: "... --volume ..."}
 	as.Post("/c1", ctx)
 	getStatus("c1")
 	t.Test(len(ctx.Apps) == 3 && ctx.Apps["app4"] != nil &&
-		len(ctxRuns["app3"]) == 1 && app3Node == ctxRuns["app3"][0].Node &&
+		len(ctxRuns["app3:0.1"]) == 1 && app3Node == ctxRuns["app3:0.1"][0].Node &&
 		len(ctxRuns["app4"]) == 2 &&
 		(app4Node1 == ctxRuns["app4"][0].Node || app4Node1 == ctxRuns["app4"][1].Node) &&
 		(app4Node2 == ctxRuns["app4"][0].Node || app4Node2 == ctxRuns["app4"][1].Node),
 		"Add App 3&4 For Bind")
 
+	// 更新 app3
+	ctx.Apps["app3:0.2"] = ctx.Apps["app3:0.1"]
+	ctx.Binds["app3:0.2"] = ctx.Binds["app3:0.1"]
+	delete(ctx.Apps, "app3:0.1")
+	as.Post("/c1", ctx)
+	getStatus("c1")
+	t.Test(len(ctx.Apps) == 3 && ctx.Apps["app4"] != nil &&
+		len(ctxRuns["app3:0.2"]) == 1 && app3Node == ctxRuns["app3:0.2"][0].Node &&
+		len(ctxRuns["app4"]) == 2 &&
+		(app4Node1 == ctxRuns["app4"][0].Node || app4Node1 == ctxRuns["app4"][1].Node) &&
+		(app4Node2 == ctxRuns["app4"][0].Node || app4Node2 == ctxRuns["app4"][1].Node),
+		"Update App 3")
+
 	// 删除 app 2 & 3 & 4
-	delete(ctx.Apps, "app3")
+	delete(ctx.Apps, "app3:0.2")
 	delete(ctx.Apps, "app4")
 	as.Post("/c1", ctx)
 	time.Sleep(time.Millisecond * 100)
 	getStatus("c1")
 	t.Test(len(ctx.Apps) == 1 && ctx.Apps["app4"] == nil && ctx.Apps["app1"] != nil,
-		"Remove App 2&3&4")
+		"Remove App 2&3&4", len(ctx.Apps), ctx.Apps)
 }
 
 func TestEnd(tt *testing.T) {

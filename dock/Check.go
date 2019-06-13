@@ -221,7 +221,25 @@ func checkAppForStart(ctxName, appName string) (bool, bool, error) {
 
 		var id, runName string
 		if nodes[nodeName] != nil {
-			// 不存在了的节点不执行
+			// 如果有冲突的绑定应用，先停止旧的
+			if ctx.Binds[appName] != nil && len(ctx.Binds[appName]) > 0 {
+				pos := strings.IndexByte(appName, ':')
+				if pos == -1 {
+					pos = strings.IndexByte(appName, '#')
+				}
+				oldAppNamePrefix := appName
+				if pos > 0 {
+					oldAppNamePrefix = appName[0:pos]
+				}
+				for oldAppName := range runsByApp {
+					if oldAppName != appName && strings.HasPrefix(oldAppName, oldAppNamePrefix) && ctx.Binds[oldAppName] != nil && len(ctx.Binds[oldAppName]) > 0{
+						if strings.Join(ctx.Binds[oldAppName], ",") == strings.Join(ctx.Binds[appName], ",") {
+							_, _ = checkAppForStop(ctxName, oldAppName)
+						}
+					}
+				}
+			}
+
 			id, runName, err = startApp(ctxName, appName, nodeName, app)
 			if id == "" || runName == "" {
 				// 启动失败将不执行后面的过程
@@ -270,11 +288,11 @@ func checkAppForStop(ctxName, appName string) (bool, error) {
 		changed = true
 		// 停掉已经不需要的App
 		allDone := true
-		i := 0
+		//i := 0
 		if runs != nil {
 			leftRuns := make([]*AppStatus, 0)
 			for _, run := range runs {
-				i++
+				//i++
 				if ok, err = stopApp(ctxName, run); ok == false {
 					// 停止失败，后续会再次尝试
 					allDone = false
@@ -304,10 +322,12 @@ func checkAppForStop(ctxName, appName string) (bool, error) {
 		// 停掉多余的App
 		if len(runs) > app.Max {
 			for i := len(runs) - 1; i >= app.Max; i-- {
-				changed = true
+				if runs[i].Id != "" {
+					changed = true
 
-				if ok, err = stopApp(ctxName, runs[i]); ok {
-					runs[i].Id = ""
+					if ok, err = stopApp(ctxName, runs[i]); ok {
+						runs[i].Id = ""
+					}
 				}
 			}
 		}

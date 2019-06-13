@@ -210,7 +210,7 @@ ContextView.prototype.check = function (event, type, idx) {
 
         // sync bind
         var synced = false
-        if (type==='apps' && list[idx].name && list[idx].name !== oldList[idx].name ){
+        if (type==='apps' && oldList[idx] && list[idx].name && list[idx].name !== oldList[idx].name ){
             for (var i in this.data._binds){
                 if (this.data._binds[i].name === oldList[idx].name ){
                     this.data.binds[i].name = list[idx].name
@@ -220,7 +220,7 @@ ContextView.prototype.check = function (event, type, idx) {
             }
         }
 
-        if (type==='binds' && list[idx].name && list[idx].name !== oldList[idx].name ){
+        if (type==='binds' && oldList[idx] && list[idx].name && list[idx].name !== oldList[idx].name ){
             for (var i in this.data._apps){
                 if (this.data._apps[i].name === oldList[idx].name ){
                     this.data.apps[i].name = list[idx].name

@@ -102,7 +102,7 @@ func getGlobalInfo() (out struct {
 	out.Nodes = nodesSafely.Load().(map[string]*NodeInfo)
 	out.Vars = globalVars
 	out.Args = globalArgs
-	out.PublicKey, _ = u.ReadFile(dataPath(".ssh", "id_dsa.pub"), 2048)
+	out.PublicKey, _ = u.ReadFile(dataPath(".ssh", "id_ecdsa.pub"), 2048)
 	out.InstallToken = installToken
 	return
 }
@@ -112,7 +112,7 @@ type globalStatusResult struct {
 }
 
 func getNodeInstaller() string {
-	publicKey, _ := u.ReadFile(dataPath(".ssh", "id_dsa.pub"), 2048)
+	publicKey, _ := u.ReadFile(dataPath(".ssh", "id_ecdsa.pub"), 2048)
 	publicKey = strings.TrimSpace(publicKey)
 	return `
 echo "# creating doker user ..."

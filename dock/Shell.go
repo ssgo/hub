@@ -30,7 +30,7 @@ func defaultShell(timeout time.Duration, nodeName string, args ...string) (strin
 	//if dockConfig.PrivateKey != "" {
 	//	sshArgs = append(sshArgs, "-i", "/opt/privateKey", "-o", "StrictHostKeyChecking=no")
 	//}
-	sshArgs = append(sshArgs, "-i", dataPath(".ssh", "id_dsa"), "-o", "StrictHostKeyChecking=no")
+	sshArgs = append(sshArgs, "-i", dataPath(".ssh", "id_ecdsa"), "-o", "StrictHostKeyChecking=no")
 	sshArgs = append(sshArgs, "docker@"+sshHost, "-p", sshPort, "docker")
 	sshArgs = append(sshArgs, args...)
 	cmd := exec.Command("ssh", sshArgs...)

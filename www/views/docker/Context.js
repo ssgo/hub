@@ -210,9 +210,9 @@ ContextView.prototype.check = function (event, type, idx) {
 
         // sync bind
         var synced = false
-        if (type==='apps' && oldList[idx] && list[idx].name && list[idx].name !== oldList[idx].name ){
-            for (var i in this.data._binds){
-                if (this.data._binds[i].name === oldList[idx].name ){
+        if (type === 'apps' && oldList[idx] && list[idx].name && list[idx].name !== oldList[idx].name) {
+            for (var i in this.data._binds) {
+                if (this.data._binds[i].name === oldList[idx].name) {
                     this.data.binds[i].name = list[idx].name
                     this.data.binds[i].changed = true
                     synced = true
@@ -220,9 +220,9 @@ ContextView.prototype.check = function (event, type, idx) {
             }
         }
 
-        if (type==='binds' && oldList[idx] && list[idx].name && list[idx].name !== oldList[idx].name ){
-            for (var i in this.data._apps){
-                if (this.data._apps[i].name === oldList[idx].name ){
+        if (type === 'binds' && oldList[idx] && list[idx].name && list[idx].name !== oldList[idx].name) {
+            for (var i in this.data._apps) {
+                if (this.data._apps[i].name === oldList[idx].name) {
                     this.data.apps[i].name = list[idx].name
                     this.data.apps[i].changed = true
                     synced = true
@@ -235,9 +235,9 @@ ContextView.prototype.check = function (event, type, idx) {
     if (idx === list.length - 1) {
         list.push({})
         this.refreshView()
-    } else if (synced){
+    } else if (synced) {
         this.refreshView()
-    }else{
+    } else {
         tpl.refresh(this.$('.saveBox'), {data: {changed: true}})
         event.target.parentElement.parentElement.className = 'danger'
     }
@@ -284,34 +284,34 @@ ContextView.prototype.showConfigWindow = function (which, index) {
     }
 
     var args = ''
-    if (which==='app') {
+    if (which === 'app') {
         this.configAppItem = this.data.apps[index]
         this.configVarItem = null
         args = this.configAppItem.args
-    }else if (which==='var') {
+    } else if (which === 'var') {
         this.configVarItem = this.data.vars[index]
         this.configAppItem = null
         args = this.configVarItem.value
     }
-    var m = praseCommandArgs(args+' ')
+    var m = praseCommandArgs(args + ' ')
     var num = m.length
     for (var i = 0; i < m.length; i++) {
         var v = m[i]
         if (v === '-e') {
             if (i < num - 1) {
-                a = m[i + 1].split('=', 2)
+                a = split2(m[i + 1], '=')
                 data.configEnvs.push({key: a[0], value: a[1]})
                 i++
             }
         } else if (v === '-p') {
             if (i < num - 1) {
-                a = m[i + 1].split(':', 2)
+                a = split2(m[i + 1], ':')
                 data.configPorts.push({from: a[0], to: a[1]})
                 i++
             }
         } else if (v === '-v') {
             if (i < num - 1) {
-                a = m[i + 1].split(':', 2)
+                a = split2(m[i + 1], ':')
                 data.configVolumes.push({from: a[0], to: a[1]})
                 i++
             }
@@ -344,19 +344,19 @@ ContextView.prototype.showVarHinter = function (target, value) {
         var v = m[i]
         if (v === '-e') {
             if (i < num - 1) {
-                a = m[i + 1].split('=', 2)
+                a = split2(m[i + 1], '=')
                 hints.push('-e <b>' + a[0] + '</b>=<i>' + a[1] + '</i>')
                 i++
             }
         } else if (v === '-p') {
             if (i < num - 1) {
-                a = m[i + 1].split(':', 2)
+                a = split2(m[i + 1], ':')
                 hints.push('-p <b>' + a[0] + '</b>:<i>' + a[1] + '</i>')
                 i++
             }
         } else if (v === '-v') {
             if (i < num - 1) {
-                a = m[i + 1].split(':', 2)
+                a = split2(m[i + 1], ':')
                 hints.push('-v <b>' + a[0] + '</b>:<i>' + a[1] + '</i>')
                 i++
             }
@@ -377,6 +377,15 @@ ContextView.prototype.showVarHinter = function (target, value) {
     o.style.left = x + 'px'
     o.style.top = y + 'px'
     o.style.display = 'block'
+}
+
+function split2(str, dep) {
+    var pos = str.indexOf(dep)
+    if (pos === -1) {
+        return [str, '']
+    } else {
+        return [str.substring(0, pos), str.substring(pos + 1)]
+    }
 }
 
 ContextView.prototype.hideVarHinter = function (target, value) {
@@ -465,7 +474,7 @@ ContextView.prototype.saveConfig = function () {
     if (this.configAppItem) {
         this.configAppItem.args = cfgs.join(' ')
         this.configAppItem.changed = true
-    }else if (this.configVarItem) {
+    } else if (this.configVarItem) {
         this.configVarItem.value = cfgs.join(' ')
         this.configVarItem.changed = true
     }

@@ -85,7 +85,7 @@ func startApp(ctxName, appName, nodeName string, app *AppInfo) (string, string, 
 	args := make([]string, 0)
 	args = append(args, "run", "--name", dockerRunName, "-d", "--restart=always")
 	if globalArgs != "" {
-		args = append(args, strings.Split(globalArgs, " ")...)
+		args = append(args, PraseCommandArgs(globalArgs)...)
 	}
 	if app.Cpu > 0.01 {
 		args = append(args, "--cpus", fmt.Sprintf("%.2f", app.Cpu))
@@ -119,10 +119,26 @@ func startApp(ctxName, appName, nodeName string, app *AppInfo) (string, string, 
 	//	}
 	//}
 
-	args = append(args, strings.Split(tmpArgs, " ")...)
+	parsedArgs := PraseCommandArgs(tmpArgs)
+	for i := 0; i < len(parsedArgs); i++ {
+		arg := parsedArgs[i]
+
+		if arg == "-d" || strings.HasPrefix(arg, "--restart=") || strings.HasPrefix(arg, "--name=") || strings.HasPrefix(arg, "--cpus=") || strings.HasPrefix(arg, "--memory=") {
+			continue
+		}
+
+		if arg == "--restart" || arg == "--name" || arg == "--cpus" || arg == "--memory" || arg == "-m" {
+			i++
+			continue
+		}
+
+		args = append(args, arg)
+	}
+
+	//args = append(args, PraseCommandArgs(tmpArgs)...)
 	args = append(args, appName)
 	if app.Command != "" {
-		args = append(args, strings.Split(app.Command, " ")...)
+		args = append(args, PraseCommandArgs(app.Command)...)
 	}
 	//log.Print("Dock	exec	run	[", ctxName, "]	\033[32mdocker ", strings.Join(args, " "), "\033[0m")
 	shellOut, usedTime, err := shellFunc(60000, nodeName, args...)
@@ -240,4 +256,33 @@ func stopApp(ctxName string, run *AppStatus) (bool, error) {
 func getLastLine(out string) string {
 	a := strings.Split(strings.TrimSpace(out), "\n")
 	return a[len(a)-1]
+}
+
+func PraseCommandArgs(cmd string) []string {
+	cmd = strings.TrimSpace(cmd) + " "
+	args := make([]string, 0)
+	start := -1
+	var quota int32 = 0
+	for i, c := range cmd {
+		if start == -1 {
+			start = i
+			if c == '"' || c == '\'' {
+				quota = c
+			}
+		} else if c == ' ' {
+			if quota == 0 {
+				if cmd[start] == cmd[i-1] && (cmd[start] == '"' || cmd[start] == '\'') {
+					args = append(args, strings.ReplaceAll(cmd[start+1:i-1], fmt.Sprintf("\\%c", cmd[start]), fmt.Sprintf("%c", cmd[start])))
+				} else {
+					args = append(args, cmd[start:i])
+				}
+				start = -1
+			}
+		} else if c == quota {
+			if i > 0 && cmd[i-1] != '\\' {
+				quota = 0
+			}
+		}
+	}
+	return args
 }

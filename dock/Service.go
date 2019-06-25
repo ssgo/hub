@@ -27,17 +27,17 @@ func Registers() {
 	s.Restful(9, "GET", "/install/{token}", getNodeInstaller)
 }
 
-func auth(authLevel int, url *string, in *map[string]interface{}, request *http.Request) bool {
+func auth(authLevel int, url *string, in map[string]interface{}, request *http.Request) bool {
 	token := request.Header.Get("Access-Token")
 	switch (authLevel) {
 	case 1:
 		return authManage(token) || authAnyContext(token)
 	case 2:
-		return authManage(token) || authContext(token, u.String((*in)["name"]))
+		return authManage(token) || authContext(token, u.String(in["name"]))
 	case 3:
 		return authManage(token)
 	case 9:
-		return (*in)["token"] == installToken
+		return in["token"] == installToken
 	}
 	return false
 }

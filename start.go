@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/ssgo/dock/dock"
+	"github.com/ssgo/hub/dock"
 	"github.com/ssgo/s"
 )
 

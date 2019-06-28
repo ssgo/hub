@@ -6,10 +6,11 @@ import (
 	"time"
 )
 
-type RunInfo struct{
-	Name string
+type RunInfo struct {
+	Name  string
 	Image string
 }
+
 var sequences = map[string]int{}
 var runs = map[string]map[string]*RunInfo{}
 
@@ -24,7 +25,7 @@ func TestShell(timeout time.Duration, nodeName string, args ...string) (string, 
 		//}
 		sequences[nodeName]++
 		id := fmt.Sprintf("%s<%.2d>", nodeName, sequences[nodeName])
-		runs[nodeName][id] = &RunInfo{Image:args[len(args)-1], Name:args[2]}
+		runs[nodeName][id] = &RunInfo{Image: args[len(args)-1], Name: args[2]}
 		if runs[nodeName][id].Image == "xxx" {
 			runs[nodeName][id].Image = args[len(args)-2]
 		}

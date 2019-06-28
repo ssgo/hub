@@ -1,4 +1,4 @@
-module github.com/ssgo/dock
+module github.com/ssgo/hub
 
 go 1.12
 

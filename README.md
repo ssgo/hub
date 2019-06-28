@@ -1,10 +1,10 @@
-# 基于 ssgo/s 的一个docker自动管理工具
+# 容器与配置管理中心
 
-docker run -d --restart=always --name dock --network=host -v /opt/dock:/opt/data -e 'dock_privateKey=-----BEGIN RSA PRIVATE KEY-----,......,-----END RSA PRIVATE KEY-----' ssgo/dock:0.21
+docker run -d --restart=always --name hub --network=host -v /opt/hub:/opt/data -e 'dock_privateKey=-----BEGIN RSA PRIVATE KEY-----,......,-----END RSA PRIVATE KEY-----' ssgo/dock:0.21
 
 # 存储依赖
 
-数据会存储在 /opt/data 下，可以使用 -v /opt/dock:/opt/data 来挂在外部磁盘
+数据会存储在 /opt/data 下，可以使用 -v /opt/hub:/opt/data 来挂在外部磁盘
 
 # SSH Key
 

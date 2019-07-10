@@ -68,5 +68,6 @@ func saveMulti(prefix string, key string, newList map[string]string, redisPool *
 			redisPool.HDEL(currentKey, index)
 		}
 	}
+	redisPool.Do("PUBLISH", "_CH"+currentKey, 1)
 	return true
 }

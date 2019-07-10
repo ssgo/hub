@@ -1,0 +1,49 @@
+<style>
+    h3 {
+        margin: 5px 0 5px 5px;
+        padding: 10px 0;
+        border-bottom: #ddd 1px solid;
+        color: #666;
+    }
+    th{
+        text-align: center;
+        font-weight: normal;
+        color: #999;
+    }
+    .form-control{
+        padding: 0;
+        text-align: center;
+    }
+
+    .mainNav, .topNav *{
+        min-height: 40px;
+        height: 40px;
+    }
+    .mainNav a{
+        padding: 8px 15px !important;
+        height: 35px;
+        margin-top: 5px;
+    }
+    .mainNav .active > a{
+        background: #fff !important;
+        color: #333 !important;
+        border-bottom: #eee !important;
+    }
+</style>
+
+<nav class="mainNav navbar navbar-inverse navbar-fixed-top" style="right: 100px; top: 30px; border-radius: 0 0 5px 0; border-bottom: 0; border-top: 1px solid #222;">
+    <div class="container-fluid">
+        <div id="navbar" class="navbar-collapse collapse">
+            <ul class="nav navbar-nav">
+                <li class="active"><a style="cursor:pointer" href="#/gateway/config">Config</a></li>
+            </ul>
+            <div if="(data.nav!=='global' && data.authLevel===2) || data.authLevel===3" class="btn-group btn-group-sm pull-right" role="group" style="margin-top: 3px; margin-right: -5px;">
+                <button onclick="states.set({editMode:false})" type="button" class="btn {data.editMode===true?'btn-default':'btn-primary active'}">View</button>
+                <button onclick="states.set({editMode:true})" type="button" class="btn {data.editMode===true?'btn-primary active':'btn-default'}">Edit</button>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<div id="SUBVIEW">
+</div>

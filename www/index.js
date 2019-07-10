@@ -27,6 +27,7 @@ var actions = new svcAction.Action({
 actions.register('user', UserAction)
 actions.register('global', GlobalAction)
 actions.register('context', ContextAction)
+actions.register('gateway', GateConfigAction)
 
 // 设置根路由Root
 route.Root = {
@@ -36,6 +37,8 @@ route.Root = {
                 return LoginView
             case 'docker':
                 return DockerView
+            case 'gateway':
+                return GatewayView
         }
     }
 }

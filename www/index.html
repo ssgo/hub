@@ -16,6 +16,10 @@
     <script src="views/docker/Docker.js?v=__TAG__"></script>
     <script src="views/docker/Global.js?v=__TAG__"></script>
     <script src="views/docker/Context.js?v=__TAG__"></script>
+
+    <script src="actions/gateway/Config.js?v=__TAG__"></script>
+    <script src="views/gateway/Config.js?v=__TAG__"></script>
+    <script src="views/gateway/Gateway.js?v=__TAG__"></script>
     <script src="index.js?ver=__TAG__"></script>
     <style>
         body{
@@ -41,7 +45,7 @@
         <div id="navbar" class="navbar-collapse collapse">
             <ul class="nav navbar-nav">
                 <li class="dockerNav" onclick="setNavStatus(this)"><a style="cursor:pointer" href="#/docker/global">Docker</a></li>
-                <li class="gatewayNav" onclick="setNavStatus(this)"><a style="cursor:pointer" href="#/gateway">Gateway</a></li>
+                <li class="gatewayNav" onclick="setNavStatus(this)"><a style="cursor:pointer" href="#/gateway/config">Gateway</a></li>
                 <li class="hotconfigNav" onclick="setNavStatus(this)"><a style="cursor:pointer" href="#/hotconfig">Hot Config</a></li>
                 <li class="discoverNav" onclick="setNavStatus(this)"><a style="cursor:pointer" href="#/discover">Discover</a></li>
             </ul>

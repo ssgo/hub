@@ -10,7 +10,7 @@ import (
 )
 
 func Registers() {
-	s.SetAuthChecker(auth)
+	s.SetAuthChecker(Auth)
 	s.Static("/", "www/")
 	s.Restful(0, "POST", "/login", login)
 
@@ -27,9 +27,9 @@ func Registers() {
 	s.Restful(9, "GET", "/install/{token}", getNodeInstaller)
 }
 
-func auth(authLevel int, url *string, in map[string]interface{}, request *http.Request) bool {
+func Auth(authLevel int, url *string, in map[string]interface{}, request *http.Request) bool {
 	token := request.Header.Get("Access-Token")
-	switch (authLevel) {
+	switch authLevel {
 	case 1:
 		return authManage(token) || authAnyContext(token)
 	case 2:
@@ -96,7 +96,7 @@ type GlobalInfo struct {
 
 func getGlobalInfo() (out struct {
 	GlobalInfo
-	PublicKey string
+	PublicKey    string
 	InstallToken string
 }) {
 	out.Nodes = nodesSafely.Load().(map[string]*NodeInfo)
@@ -131,7 +131,7 @@ EOF
 
 echo "# installing ssh key ..."
 mkdir /home/docker/.ssh
-echo 'command="/home/docker/limit-docker",no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty `+publicKey+`' > /home/docker/.ssh/authorized_keys
+echo 'command="/home/docker/limit-docker",no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty ` + publicKey + `' > /home/docker/.ssh/authorized_keys
 chmod 500 /home/docker/.ssh
 chmod 400 /home/docker/.ssh/authorized_keys
 chown -R docker:docker /home/docker/.ssh
@@ -163,6 +163,31 @@ func getContextList(request *http.Request) map[string]string {
 		}
 		return out
 	}
+}
+
+func GetDiscover() string {
+	var in struct{ Name string }
+	in.Name = "global"
+	globalContext := getContext(in)
+	if globalContext == nil {
+		return ""
+	}
+	globalVars := globalContext.Vars
+	discover, ok := globalVars["discover"]
+	if !ok {
+		return ""
+	}
+	discoverVar := *discover
+	discoverPos := strings.Index(discoverVar, "=")
+	if discoverPos < 1 {
+		return ""
+	}
+	lenDiscover := len(discoverVar)
+	discoverVar = discoverVar[discoverPos:lenDiscover]
+	discoverVar = strings.Trim(discoverVar, " ")
+	discoverVar = strings.Trim(discoverVar, "'")
+	return strings.Trim(discoverVar, "\"")
+
 }
 
 func getContext(in struct{ Name string }) *ContextInfo {

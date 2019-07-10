@@ -77,6 +77,9 @@ GlobalView.prototype.onRefreshStatus = function () {
         var node = this.data.nodes[k]
         if (!node.name) continue
         var status = states.state.nodeStatus[node.name]
+        if (typeof status === "undefined") {
+            continue
+        }
         if (node.usedCpu !== status.usedCpu) {
             node.usedCpu = status.usedCpu
             tpl.refresh(this.$('.' + 'usedCpu_' + k), {item: node})

@@ -3,7 +3,7 @@ var UserAction = {
     'login': function (ctx, args) {
         if (!args.accessToken) {
             ctx.states.set('logined', false)
-            ctx.reject('No Token')
+            //ctx.reject('No Token')
             return
         }
 

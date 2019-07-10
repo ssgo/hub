@@ -8,8 +8,6 @@ import (
 	"github.com/ssgo/u"
 )
 
-var redisPool *redis.Redis
-
 type gateConfig struct {
 	Proxies  map[string]string
 	Rewrites map[string]string
@@ -17,16 +15,15 @@ type gateConfig struct {
 }
 
 var logger = log.New(u.ShortUniqueId())
-var proxiesKey string
 
 func Registers() {
-	//s.SetAuthChecker(dock.Auth)
-	redisPool = redis.GetRedis(dock.GetDiscover(), logger)
+	s.SetAuthChecker(dock.Auth)
 	s.Restful(1, "GET", "/gateway", getGatewayInfo)
 	s.Restful(2, "POST", "/gateway", setGatewayInfo)
 }
 
 func getPrefix() string {
+	redisPool := redis.GetRedis(dock.GetDiscover(), logger)
 	proxyKeys := redisPool.KEYS("_*proxies")
 	if len(proxyKeys) < 1 {
 		return "_"
@@ -40,6 +37,7 @@ func getPrefix() string {
 }
 
 func getGatewayInfo() (gatewayConfig gateConfig) {
+	redisPool := redis.GetRedis(dock.GetDiscover(), logger)
 	prefix := getPrefix()
 	gatewayConfig.Proxies = redisPool.Do("HGETALL", prefix+"proxies").StringMap()
 	gatewayConfig.Rewrites = redisPool.Do("HGETALL", prefix+"rewrites").StringMap()
@@ -51,11 +49,11 @@ func setGatewayInfo(gatewayConfig gateConfig) bool {
 	prefix := getPrefix()
 	newProxies := gatewayConfig.Proxies
 	newRewrites := gatewayConfig.Rewrites
-
-	return saveMulti(prefix, "proxies", newProxies) && saveMulti(prefix, "rewrites", newRewrites)
+	redisPool := redis.GetRedis(dock.GetDiscover(), logger)
+	return saveMulti(prefix, "proxies", newProxies, redisPool) && saveMulti(prefix, "rewrites", newRewrites, redisPool)
 }
 
-func saveMulti(prefix string, key string, newList map[string]string) bool {
+func saveMulti(prefix string, key string, newList map[string]string, redisPool *redis.Redis) bool {
 	oldList := redisPool.Do("HGETALL", prefix+key).StringMap()
 	currentKey := prefix + key
 	for index, single := range newList {

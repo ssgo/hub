@@ -8,7 +8,10 @@ var GateConfigView = function () {
 GateConfigView.prototype.getConfig = function() {
     var that = this
     actions.call("gateway.getGateway").then(function () {
-        if(typeof(states.state.gatewayConfig.proxies)==="undefined") {
+        if(typeof states.state.gatewayConfig ==="undefined") {
+            return
+        }
+        if(!states.state.gatewayConfig) {
             return
         }
         var gatewayInfo = {}
@@ -116,6 +119,6 @@ GateConfigView.prototype.save = function() {
         that.setData({changed: false})
         that.onShow()
     }).catch(function (reason) {
-        alert('Save gateway info has error: ' + reason)
+        alert('Save gateway info has error: ' + reason.toString())
     })
 }

@@ -166,28 +166,21 @@ func getContextList(request *http.Request) map[string]string {
 }
 
 func GetDiscover() string {
-	var in struct{ Name string }
-	in.Name = "global"
-	globalContext := getContext(in)
-	if globalContext == nil {
-		return ""
-	}
-	globalVars := globalContext.Vars
 	discover, ok := globalVars["discover"]
 	if !ok {
 		return ""
 	}
 	discoverVar := *discover
+
 	discoverPos := strings.Index(discoverVar, "=")
 	if discoverPos < 1 {
 		return ""
 	}
 	lenDiscover := len(discoverVar)
-	discoverVar = discoverVar[discoverPos:lenDiscover]
+	discoverVar = discoverVar[discoverPos+1 : lenDiscover]
 	discoverVar = strings.Trim(discoverVar, " ")
 	discoverVar = strings.Trim(discoverVar, "'")
 	return strings.Trim(discoverVar, "\"")
-
 }
 
 func getContext(in struct{ Name string }) *ContextInfo {

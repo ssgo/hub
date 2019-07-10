@@ -43,7 +43,7 @@
 </div>
 
 <div class="fullBox">
-    <h3 class="sub-header">Gateway Config<span class="text-muted" style="font-size:14px;margin-left:10px">from {$discover} redis data</span>
+    <h3 class="sub-header">Gateway Config<span class="text-muted" style="font-size:14px;margin-left:10px">Docker global var {$discover} redis data</span>
     </h3>
     <table class="table">
         <tbody>
@@ -64,10 +64,10 @@
             <td>Rewrites</td>
             <td>
                 <p each="data.rewrites">
-                    <input if="data.editMode" type="text" class="gatewayInput" placeholder="from path" bind="item.fromPath" width="300"
+                    <input if="data.editMode" type="text" class="gatewayInput" placeholder="From URL" bind="item.fromPath" width="300"
                            onbind="$this.check(event, 'rewrites',{index})" {data.editMode!==true?'disabled':''} />
                     <span if="data.editMode" class="routeSeparator"> : </span>
-                    <input if="data.editMode" type="text" class="gatewayInput" placeholder="to path" bind="item.toPath" width="300"
+                    <input if="data.editMode" type="text" class="gatewayInput" placeholder="To URL" bind="item.toPath" width="300"
                            onbind="$this.check(event, 'rewrites',{index})" {data.editMode!==true?'disabled':''} />
                     <span if="!data.editMode && item.fromPath.length>0" class="text-muted">{item.fromPath}<span class="routeSeparator"> : </span>{item.toPath}</span>
                 </p>

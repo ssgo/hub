@@ -166,6 +166,7 @@ func getContextList(request *http.Request) map[string]string {
 }
 
 func GetDiscover() string {
+	return "127.0.0.1:6379:3:udigzs+oTp2Kau3Gs20xXQ=="
 	discover, ok := globalVars["discover"]
 	if !ok {
 		return ""

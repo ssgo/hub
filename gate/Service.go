@@ -29,10 +29,11 @@ func getPrefix() string {
 		return "_"
 	}
 	proxiesKey := proxyKeys[0]
-	if len(proxyKeys) <= 7 {
+	lenProxiesKey := len(proxiesKey)
+	if lenProxiesKey <= 7 {
 		return "_"
 	}
-	prefix := proxiesKey[0 : len(proxyKeys)-7]
+	prefix := proxiesKey[0 : lenProxiesKey-7]
 	return prefix
 }
 

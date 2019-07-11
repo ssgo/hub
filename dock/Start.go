@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-var dockConfig = struct {
+var hubConfig = struct {
 	CheckInterval int
 	DataPath      string
 	//LogFile       string
@@ -50,11 +50,11 @@ func SetSleepUnit(unit time.Duration) {
 }
 
 func initConfig() {
-	config.LoadConfig("dock", &dockConfig)
+	config.LoadConfig("hub", &hubConfig)
 
 	//log.SetFlags(log.Ldate | log.Lmicroseconds)
-	//if dockConfig.LogFile != "" {
-	//	f, err := os.OpenFile(dockConfig.LogFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	//if hubConfig.LogFile != "" {
+	//	f, err := os.OpenFile(hubConfig.LogFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 	//	if err == nil {
 	//		log.SetOutput(f)
 	//	} else {
@@ -65,16 +65,16 @@ func initConfig() {
 	//	log.SetOutput(os.Stdout)
 	//}
 
-	if dockConfig.CheckInterval == 0 {
-		dockConfig.CheckInterval = 5
+	if hubConfig.CheckInterval == 0 {
+		hubConfig.CheckInterval = 5
 	}
-	if dockConfig.DataPath == "" {
-		dockConfig.DataPath = "/opt/data"
+	if hubConfig.DataPath == "" {
+		hubConfig.DataPath = "/opt/data"
 	}
-	//if dockConfig.PrivateKey != "" {
+	//if hubConfig.PrivateKey != "" {
 	//	f, err := os.OpenFile("/opt/privateKey", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	//	if err == nil {
-	//		f.Write([]byte(strings.Replace(dockConfig.PrivateKey, ",", "\n", 100)))
+	//		f.Write([]byte(strings.Replace(hubConfig.PrivateKey, ",", "\n", 100)))
 	//		f.Close()
 	//	}
 	//}
@@ -89,14 +89,14 @@ func initConfig() {
 		}
 	}
 
-	//if dockConfig.AccessToken == "" {
-	//	dockConfig.AccessToken = "51dock"
+	//if hubConfig.AccessToken == "" {
+	//	hubConfig.AccessToken = "51hub"
 	//}
-	if dockConfig.ManageToken == "" {
-		dockConfig.ManageToken = "91dock"
+	if hubConfig.ManageToken == "" {
+		hubConfig.ManageToken = "91hub"
 	}
 
-	dockConfig.ManageToken = EncodeToken(dockConfig.ManageToken)
+	hubConfig.ManageToken = EncodeToken(hubConfig.ManageToken)
 
 	if shellFunc == nil {
 		shellFunc = defaultShell
@@ -133,7 +133,7 @@ func Start() {
 	globalArgs = global.Args
 	nodeStatus = make(map[string]*NodeStatus)
 
-	files, err := ioutil.ReadDir(dockConfig.DataPath)
+	files, err := ioutil.ReadDir(hubConfig.DataPath)
 	if err == nil {
 		for _, file := range files {
 			fileName := file.Name()
@@ -239,7 +239,7 @@ func Start() {
 		if !isRunning {
 			break
 		}
-		for i := 0; i < dockConfig.CheckInterval; i++ {
+		for i := 0; i < hubConfig.CheckInterval; i++ {
 			time.Sleep(sleepUnit)
 			if !isRunning {
 				break

@@ -80,7 +80,7 @@ func newContext() *ContextInfo {
 }
 
 func dataPath(names ...string) string {
-	return fmt.Sprintf("%s%c%s", dockConfig.DataPath, os.PathSeparator, strings.Join(names, string(os.PathSeparator)))
+	return fmt.Sprintf("%s%c%s", hubConfig.DataPath, os.PathSeparator, strings.Join(names, string(os.PathSeparator)))
 }
 
 func checkPath(file string) {
@@ -95,7 +95,7 @@ func checkPath(file string) {
 }
 
 func load(file string, to interface{}) {
-	file = fmt.Sprintf("%s/%s", dockConfig.DataPath, file)
+	file = fmt.Sprintf("%s/%s", hubConfig.DataPath, file)
 	//file = dataPath(file)
 	checkPath(file)
 
@@ -117,7 +117,7 @@ func load(file string, to interface{}) {
 }
 
 func save(file string, data interface{}) {
-	file = fmt.Sprintf("%s/%s", dockConfig.DataPath, file)
+	file = fmt.Sprintf("%s/%s", hubConfig.DataPath, file)
 	//file = dataPath(file)
 	checkPath(file)
 
@@ -138,7 +138,7 @@ func save(file string, data interface{}) {
 }
 
 func remove(file string) {
-	file = fmt.Sprintf("%s/%s", dockConfig.DataPath, file)
+	file = fmt.Sprintf("%s/%s", hubConfig.DataPath, file)
 	//file = dataPath(file)
 	err := os.Remove(file)
 	if err != nil {
@@ -147,7 +147,7 @@ func remove(file string) {
 }
 
 func incr(file string) int {
-	file = fmt.Sprintf("%s/.incr/%s", dockConfig.DataPath, file)
+	file = fmt.Sprintf("%s/.incr/%s", hubConfig.DataPath, file)
 	//file = dataPath(".incr", file)
 	checkPath(file)
 

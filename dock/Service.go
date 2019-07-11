@@ -43,7 +43,7 @@ func Auth(authLevel int, url *string, in map[string]interface{}, request *http.R
 }
 
 func authManage(token string) bool {
-	return token != "" && token == dockConfig.ManageToken
+	return token != "" && token == hubConfig.ManageToken
 }
 
 func authContext(token, contextName string) bool {
@@ -76,7 +76,7 @@ func authAnyContext(token string) bool {
 
 func login(request *http.Request) int {
 	token := request.Header.Get("Access-Token")
-	//if request.Header.Get("Access-Token") == dockConfig.AccessToken {
+	//if request.Header.Get("Access-Token") == hubConfig.AccessToken {
 	//	return 1
 	//}
 	if authManage(token) {

@@ -27,7 +27,7 @@ func defaultShell(timeout time.Duration, nodeName string, args ...string) (strin
 		}
 	}
 	sshArgs := make([]string, 0)
-	//if dockConfig.PrivateKey != "" {
+	//if hubConfig.PrivateKey != "" {
 	//	sshArgs = append(sshArgs, "-i", "/opt/privateKey", "-o", "StrictHostKeyChecking=no")
 	//}
 	sshArgs = append(sshArgs, "-i", dataPath(".ssh", "id_ecdsa"), "-o", "StrictHostKeyChecking=no")
@@ -92,7 +92,7 @@ func defaultShell(timeout time.Duration, nodeName string, args ...string) (strin
 			"limitTime", timeout,
 		)
 		//log.Print("Dock	exec error	ssh ", strings.Join(sshArgs, " "),	"	error: ", err.Error(), "	times: ", nodeFailedTimes[nodeName], "	Used: ", time.Duration(endTime.UnixNano() - startTime.UnixNano()), " of ", timeout * time.Millisecond)
-		nodeFailedTimes[nodeName] ++
+		nodeFailedTimes[nodeName]++
 		return "", usedTime, err
 	}
 	nodeFailedTimes[nodeName] = 0

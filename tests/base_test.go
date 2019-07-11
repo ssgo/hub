@@ -41,7 +41,7 @@ func TestStart(tt *testing.T) {
 
 	sha1Maker := sha1.New()
 	sha1Maker.Write([]byte("SSGO-"))
-	sha1Maker.Write([]byte("91dock"))
+	sha1Maker.Write([]byte("91hub"))
 	sha1Maker.Write([]byte("-Dock"))
 	as.SetGlobalHeader("Access-Token", hex.EncodeToString(sha1Maker.Sum([]byte{})))
 }

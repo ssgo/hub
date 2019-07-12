@@ -22,7 +22,7 @@ hub运行起来之后就可以使用了
 
 数据会存储在 /opt/data 下，可以使用 -v /opt/hub:/opt/data 来挂载外部磁盘
 
-# 自定义镜像
+# 自定义hub镜像
 
 编译hub：
 
@@ -40,7 +40,8 @@ Dockerfile：
 ```
 FROM alpine
 ADD zoneinfo/PRC /etc/localtime
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/' /etc/apk/repositories && apk add openssh-client && rm -f /var/cache/apk/*
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/' /etc/apk/repositories \
+    && apk add openssh-client && rm -f /var/cache/apk/*
 ADD dist/ /opt/
 ENTRYPOINT /opt/server
 HEALTHCHECK --interval=10s --timeout=3s CMD /opt/server check
@@ -70,10 +71,9 @@ checkInterval   检查应用状态的间隔时间，单位为秒，不填写默�
 
 dataPath        代表hub的配置持久化存储的路径，不填写默认为/opt/data
 
-manageToken     代表hub的登录密码，以读写方式查看节点和应用的运行状态
+manageToken     代表hub的登录密码，以读写方式查看节点和应用的运行状态，不填写默认为91hub
 
 可以使用 -e 'hub_xxxxxx=xxxx' 进行配置
-
 
 启动容器：
 
@@ -183,9 +183,9 @@ Max：当容器在跑的数量超过max的时，会自动杀掉多的部分保�
 score := node.UsedMemory/node.Memory + node.UsedCpu/node.Cpu
 ```
 
-如果节点上已经有当前App的容器应用,并且挂载了宿主机目录，那么：`score = score+100`
+如果节点上已经有当前App的容器应用，并且挂载了宿主机目录，那么：`score = score+100`
 
-如果节点上已经有当前App的容器应用，没有挂载目录那么根据App设置的Min值节点数进行叠加，：
+如果节点上已经有当前App的容器应用，没有挂载目录那么根据App设置的Min值节点数进行叠加：
 
 ```
 if app.Min <= 2 {
@@ -234,3 +234,5 @@ Context的备注备忘
 ```
 discover   -e 'discover_registry=ip:端口:数据库:aes加密后的密码'
 ```
+
+gateway的checkInterval与prefix需要在启动gateway的容器时指定环境变量来设定

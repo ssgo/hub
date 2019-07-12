@@ -1,10 +1,16 @@
+ssgo/hub是容器与配置管理中心，使用hub可以轻松实现容器部署与网关配置
+
 # 快速使用
 
 首先宿主机上要安装docker
 
+然后运行：
+
 ```shell
 docker run -d --network=host --restart=always -v /opt/hub:/opt/data ssgo/hub
 ```
+
+hub运行起来之后就可以使用了
 
 镜像也可以自己根据ssgo/hub的代码进行构建
 
@@ -66,7 +72,7 @@ dataPath        代表hub的配置持久化存储的路径，不填写默认为/
 
 manageToken     代表hub的登录密码，以读写方式查看节点和应用的运行状态
 
-可以使用 -e 'dock_xxxxxx=xxxx' 进行配置
+可以使用 -e 'hub_xxxxxx=xxxx' 进行配置
 
 
 启动容器：

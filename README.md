@@ -1,6 +1,10 @@
-# 启动容器
+# 快速使用
 
-docker run -d --restart=always --name hub --network=host -v /opt/hub:/opt/data image address
+首先宿主机上要安装docker
+
+```shell
+docker run -d --network=host --restart=always -v /opt/hub:/opt/data ssgo/hub
+```
 
 镜像也可以自己根据ssgo/hub的代码进行构建
 
@@ -11,6 +15,36 @@ docker run -d --restart=always --name hub --network=host -v /opt/hub:/opt/data i
 ## 存储依赖
 
 数据会存储在 /opt/data 下，可以使用 -v /opt/hub:/opt/data 来挂载外部磁盘
+
+# 自定义镜像
+
+编译hub：
+
+```
+cd hub根目录
+sed -i 's/__TAG__/$TAG/g' www/index.html
+go mod tidy
+go build -ldflags -w -o dist/server *.go
+cp *.json dist/
+cp -ra www dist/
+```
+
+Dockerfile：
+
+```
+FROM alpine
+ADD zoneinfo/PRC /etc/localtime
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/' /etc/apk/repositories && apk add openssh-client && rm -f /var/cache/apk/*
+ADD dist/ /opt/
+ENTRYPOINT /opt/server
+HEALTHCHECK --interval=10s --timeout=3s CMD /opt/server check
+```
+
+构建镜像：
+```shell
+docker build . -t $REGISTRY$CONTEXT/$PROJECT:$TAG
+docker push $REGISTRY$CONTEXT/$PROJECT:$TAG
+```
 
 # 容器与配置管理中心
 
@@ -53,7 +87,7 @@ hub本身由docker启动，可以使用容器内的hub来做远程目标机器�
 
 ## Node Installer
 
-hub管理中心通过ssh连接到docker部署的宿主机，需要使用公钥无密登录到远程宿主机
+hub管理中心通过ssh连接到docker应用容器部署的宿主机，需要使用公钥无密登录到远程宿主机
 
 在hub的Docker > global 菜单下，复制Node Installer下命令到目标宿主机，执行命令
 
@@ -79,9 +113,9 @@ hub管理中心通过ssh连接到docker部署的宿主机，需要使用公钥�
 
 设置目标机器的地址,也就是节点，同时设置节点的cup总核数，和总内存(单位为：G)
 
-可以自动获取到使用的cup核数与内存数，节点在跑的实例数。
+可以自动获取到使用的cup核数与内存数，节点在跑的实例数
 
-注意：设置节点ip地址前，一定要按照Node Installer的命令在节点上安装公钥，不然hub无法访问到节点机器
+注意：设置节点ip地址前，一定要按照**Node Installer**的命令在节点上安装公钥，不然hub无法访问到节点机器
 
 ### Global Vars
 
@@ -131,7 +165,41 @@ Args参数后面有一个小铅笔编辑按钮，让docker run的参数更改和
 
 Min Hub会按照Min的数量分配到容器绑定的节点上,优先考虑平均分布。挂载磁盘的，尽可能的分布到不同节点
 
-Max：当容器在跑的数量超过max的时，会自动杀掉一批保持最大值为Max
+Max：当容器在跑的数量超过max的时，会自动杀掉多的部分保持在跑的实例容器数量最大值为Max
+
+**节点分配权重算法**
+
+每个项目App绑定了多台机器Node节点，节点在global的Nodes中设置，在当前context > Binds指定,根据score算法取得最小值的节点进行容器部署。
+
+每个节点score初始值：
+
+```
+score := node.UsedMemory/node.Memory + node.UsedCpu/node.Cpu
+```
+
+如果节点上已经有当前App的容器应用,并且挂载了宿主机目录，那么：`score = score+100`
+
+如果节点上已经有当前App的容器应用，没有挂载目录那么根据App设置的Min值节点数进行叠加，：
+
+```
+if app.Min <= 2 {
+    // 2个节点 强平均分配，增加 300% 权重
+    score += 3
+} else if app.Min <= 4 {
+    // 3~4个节点 较强平均分配，增加 150% 权重
+    score += 1.5
+} else if app.Min <= 6 {
+    // 5~6个节点 略强平均分配，增加 80% 权重
+    score += 0.8
+} else {
+    // 7个及以上节点 弱平均分配，增加 30% 权重
+    score += 0.3
+}
+```
+
+节点上没有部署当前App，score不叠加
+
+最终找到score最小的Node，进行容器部署
 
 ### Vars
 
@@ -160,4 +228,3 @@ Context的备注备忘
 ```
 discover   -e 'discover_registry=ip:端口:数据库:aes加密后的密码'
 ```
-

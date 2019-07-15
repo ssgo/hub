@@ -234,3 +234,11 @@ discover   -e 'discover_registry=ip:端口:数据库:aes加密后的密码'
 ```
 
 gateway的checkInterval与prefix需要在启动gateway的容器时指定环境变量来设定。
+
+# Api
+
+开放api可以参考：[api文档](api.html)。
+
+登录api可以直接调用，其他api使用鉴权。使用相关权限的token才可以正常调用api。
+
+token在api请求的header头Access-Token中设置。

@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Api</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 10px;
+            background: #fff;
+            color: #333;
+        }
+
+        header {
+            border-bottom: #ddd 1px solid;
+            margin-bottom: 5px;
+            color: #000;
+            padding: 8px;
+        }
+
+        header > span {
+            font-weight: bold;
+        }
+
+        label {
+            display: inline-block;
+            padding: 0 5px;
+            background: #666;
+            font-size: 12px;
+            color: #fff;
+        }
+
+        section {
+            margin-bottom: 20px;
+            white-space: nowrap;
+            font-size: 0;
+        }
+
+        header.Action, section.Action {
+            margin-left: 20px;
+        }
+
+        section > table {
+            width: 50%;
+            display: inline-table;
+            border-collapse: collapse;
+            vertical-align: top;
+            font-size: 16px;
+
+        }
+
+        section > table:last-child {
+            border-left: 1px solid #ddd;
+        }
+
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        td {
+            padding: 3px 8px;
+            white-space: pre-wrap;
+        }
+
+        td:last-child {
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+
+<header class="Web">
+    <span>/global/status</span>
+<label>1</label>
+<label>GET</label>
+
+</header>
+<section class="Web">
+    <table>
+    
+        <tr>
+            <td colspan="2"></td>
+        </tr>
+    
+    </table>
+    <table>
+    
+    
+        <tr>
+            <td width="30%">Nodes</td>
+            <td width="70%">map[string]map[TotalRuns:int UsedCpu:float32 UsedMemory:float32]</td>
+        </tr>
+    
+    
+    </table>
+</section>
+
+<header class="Web">
+    <span>/global</span>
+<label>1</label>
+<label>GET</label>
+
+</header>
+<section class="Web">
+    <table>
+    
+        <tr>
+            <td colspan="2"></td>
+        </tr>
+    
+    </table>
+    <table>
+    
+    
+        <tr>
+            <td width="30%">GlobalInfo</td>
+            <td width="70%">{
+	&#34;Args&#34;: &#34;string&#34;,
+	&#34;Nodes&#34;: &#34;map[string]map[Cpu:float32 Memory:float32]&#34;,
+	&#34;Vars&#34;: &#34;map[string]string&#34;
+}</td>
+        </tr>
+    
+        <tr>
+            <td width="30%">InstallToken</td>
+            <td width="70%">string</td>
+        </tr>
+    
+        <tr>
+            <td width="30%">PublicKey</td>
+            <td width="70%">string</td>
+        </tr>
+    
+    
+    </table>
+</section>
+
+<header class="Web">
+    <span>/contexts</span>
+<label>1</label>
+<label>GET</label>
+
+</header>
+<section class="Web">
+    <table>
+    
+        <tr>
+            <td colspan="2"></td>
+        </tr>
+    
+    </table>
+    <table>
+    
+        <tr>
+            <td colspan="2">map[string]string</td>
+        </tr>
+    
+    </table>
+</section>
+
+<header class="Web">
+    <span>/global</span>
+<label>3</label>
+<label>POST</label>
+
+</header>
+<section class="Web">
+    <table>
+    
+    
+        <tr>
+            <td width="30%">Args</td>
+            <td width="70%">string</td>
+        </tr>
+    
+        <tr>
+            <td width="30%">Nodes</td>
+            <td width="70%">map[string]map[Cpu:float32 Memory:float32]</td>
+        </tr>
+    
+        <tr>
+            <td width="30%">Vars</td>
+            <td width="70%">map[string]string</td>
+        </tr>
+    
+    
+    </table>
+    <table>
+    
+    
+        <tr>
+            <td width="30%">Error</td>
+            <td width="70%">string</td>
+        </tr>
+    
+        <tr>
+            <td width="30%">Ok</td>
+            <td width="70%">bool</td>
+        </tr>
+    
+    
+    </table>
+</section>
+
+<header class="Web">
+    <span>/gateway</span>
+<label>1</label>
+<label>GET</label>
+
+</header>
+<section class="Web">
+    <table>
+    
+        <tr>
+            <td colspan="2"></td>
+        </tr>
+    
+    </table>
+    <table>
+    
+    
+        <tr>
+            <td width="30%">Prefix</td>
+            <td width="70%">string</td>
+        </tr>
+    
+        <tr>
+            <td width="30%">Proxies</td>
+            <td width="70%">map[string]string</td>
+        </tr>
+    
+        <tr>
+            <td width="30%">Rewrites</td>
+            <td width="70%">map[string]string</td>
+        </tr>
+    
+    
+    </table>
+</section>
+
+<header class="Web">
+    <span>/gateway</span>
+<label>2</label>
+<label>POST</label>
+
+</header>
+<section class="Web">
+    <table>
+    
+    
+        <tr>
+            <td width="30%">Prefix</td>
+            <td width="70%">string</td>
+        </tr>
+    
+        <tr>
+            <td width="30%">Proxies</td>
+            <td width="70%">map[string]string</td>
+        </tr>
+    
+        <tr>
+            <td width="30%">Rewrites</td>
+            <td width="70%">map[string]string</td>
+        </tr>
+    
+    
+    </table>
+    <table>
+    
+        <tr>
+            <td colspan="2">bool</td>
+        </tr>
+    
+    </table>
+</section>
+
+<header class="Web">
+    <span>/login</span>
+
+<label>POST</label>
+
+</header>
+<section class="Web">
+    <table>
+    
+        <tr>
+            <td colspan="2"></td>
+        </tr>
+    
+    </table>
+    <table>
+    
+        <tr>
+            <td colspan="2">int</td>
+        </tr>
+    
+    </table>
+</section>
+
+<header class="Web">
+    <span>/{name}</span>
+<label>1</label>
+<label>GET</label>
+
+</header>
+<section class="Web">
+    <table>
+    
+    
+        <tr>
+            <td width="30%">Name</td>
+            <td width="70%">string</td>
+        </tr>
+    
+    
+    </table>
+    <table>
+    
+    
+        <tr>
+            <td width="30%">Apps</td>
+            <td width="70%">map[string]map[Active:bool Args:string Command:string Cpu:float32 Max:int Memo:string Memory:float32 Min:int]</td>
+        </tr>
+    
+        <tr>
+            <td width="30%">Binds</td>
+            <td width="70%">map[string][]string</td>
+        </tr>
+    
+        <tr>
+            <td width="30%">Desc</td>
+            <td width="70%">string</td>
+        </tr>
+    
+        <tr>
+            <td width="30%">Name</td>
+            <td width="70%">string</td>
+        </tr>
+    
+        <tr>
+            <td width="30%">Token</td>
+            <td width="70%">string</td>
+        </tr>
+    
+        <tr>
+            <td width="30%">Vars</td>
+            <td width="70%">map[string]string</td>
+        </tr>
+    
+    
+    </table>
+</section>
+
+<header class="Web">
+    <span>/{name}/status</span>
+<label>1</label>
+<label>GET</label>
+
+</header>
+<section class="Web">
+    <table>
+    
+    
+        <tr>
+            <td width="30%">Name</td>
+            <td width="70%">string</td>
+        </tr>
+    
+    
+    </table>
+    <table>
+    
+        <tr>
+            <td colspan="2">map[string][]map[Cpu:float32 Ctx:string Id:string Image:string IsBind:bool Memory:float32 Name:string Node:string UpTime:string]</td>
+        </tr>
+    
+    </table>
+</section>
+
+<header class="Web">
+    <span>/{name}</span>
+<label>2</label>
+<label>POST</label>
+
+</header>
+<section class="Web">
+    <table>
+    
+    
+        <tr>
+            <td width="30%">Apps</td>
+            <td width="70%">map[string]map[Active:bool Args:string Command:string Cpu:float32 Max:int Memo:string Memory:float32 Min:int]</td>
+        </tr>
+    
+        <tr>
+            <td width="30%">Binds</td>
+            <td width="70%">map[string][]string</td>
+        </tr>
+    
+        <tr>
+            <td width="30%">Desc</td>
+            <td width="70%">string</td>
+        </tr>
+    
+        <tr>
+            <td width="30%">Name</td>
+            <td width="70%">string</td>
+        </tr>
+    
+        <tr>
+            <td width="30%">Token</td>
+            <td width="70%">string</td>
+        </tr>
+    
+        <tr>
+            <td width="30%">Vars</td>
+            <td width="70%">map[string]string</td>
+        </tr>
+    
+    
+    </table>
+    <table>
+    
+    
+        <tr>
+            <td width="30%">Error</td>
+            <td width="70%">string</td>
+        </tr>
+    
+        <tr>
+            <td width="30%">Ok</td>
+            <td width="70%">bool</td>
+        </tr>
+    
+    
+    </table>
+</section>
+
+<header class="Web">
+    <span>/{name}</span>
+<label>3</label>
+<label>DELETE</label>
+
+</header>
+<section class="Web">
+    <table>
+    
+    
+        <tr>
+            <td width="30%">Name</td>
+            <td width="70%">string</td>
+        </tr>
+    
+    
+    </table>
+    <table>
+    
+    
+        <tr>
+            <td width="30%">Error</td>
+            <td width="70%">string</td>
+        </tr>
+    
+        <tr>
+            <td width="30%">Ok</td>
+            <td width="70%">bool</td>
+        </tr>
+    
+    
+    </table>
+</section>
+
+<header class="Web">
+    <span>/install/{token}</span>
+<label>9</label>
+<label>GET</label>
+
+</header>
+<section class="Web">
+    <table>
+    
+        <tr>
+            <td colspan="2"></td>
+        </tr>
+    
+    </table>
+    <table>
+    
+        <tr>
+            <td colspan="2">string</td>
+        </tr>
+    
+    </table>
+</section>
+
+</body>
+</html>

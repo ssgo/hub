@@ -1,14 +1,3 @@
-2019/07/16 22:24:37.722647 {"info":"Dock: load context","logTime":1563287077.7226472,"logType":"info","traceId":"seAuViVkXOH","context":{"name":"base","desc":"","token":"BfFuwGekyNs","vars":{},"binds":{},"apps":{}},"file":"base"}
-2019/07/16 22:24:37.748577 {"info":"Dock: status","logTime":1563287077.7485774,"logType":"info","traceId":"seAuViVkXOH","contextRuns":{"base":{}},"contexts":null,"globalArgs":"","globalVars":null,"nodeStatus":{},"nodes":null}
-2019/07/16 22:24:37.748577 Status
->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
->>  
->>  [7m[Nodes][0m
->>  
->>  [base]
->>  
->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-2019/07/16 22:24:37.748577 {"info":"Dock: started","logTime":1563287077.7485774,"logType":"info","traceId":"seAuViVkXOH"}
 [
 	{
 		"Type": "Web",

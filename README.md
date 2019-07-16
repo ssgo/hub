@@ -239,7 +239,7 @@ gateway的checkInterval与prefix需要在启动gateway的容器时指定环境�
 
 # Api
 
-开放api可以参考：[api文档](api.html)。
+开放api可以参考：[api文档](api.json)。
 
 登录api可以直接调用，其他api使用鉴权。使用相关权限的token才可以正常调用api。
 

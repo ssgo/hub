@@ -1,0 +1,172 @@
+2019/07/16 22:24:37.722647 {"info":"Dock: load context","logTime":1563287077.7226472,"logType":"info","traceId":"seAuViVkXOH","context":{"name":"base","desc":"","token":"BfFuwGekyNs","vars":{},"binds":{},"apps":{}},"file":"base"}
+2019/07/16 22:24:37.748577 {"info":"Dock: status","logTime":1563287077.7485774,"logType":"info","traceId":"seAuViVkXOH","contextRuns":{"base":{}},"contexts":null,"globalArgs":"","globalVars":null,"nodeStatus":{},"nodes":null}
+2019/07/16 22:24:37.748577 Status
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+>>  
+>>  [7m[Nodes][0m
+>>  
+>>  [base]
+>>  
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+2019/07/16 22:24:37.748577 {"info":"Dock: started","logTime":1563287077.7485774,"logType":"info","traceId":"seAuViVkXOH"}
+[
+	{
+		"Type": "Web",
+		"Path": "/login",
+		"AuthLevel": 0,
+		"Priority": 0,
+		"Method": "POST",
+		"In": "",
+		"Out": "int"
+	},
+	{
+		"Type": "Web",
+		"Path": "/global/status",
+		"AuthLevel": 1,
+		"Priority": 0,
+		"Method": "GET",
+		"In": "",
+		"Out": {
+			"nodes": "map[string]map[totalRuns:int usedCpu:float32 usedMemory:float32]"
+		}
+	},
+	{
+		"Type": "Web",
+		"Path": "/global",
+		"AuthLevel": 1,
+		"Priority": 0,
+		"Method": "GET",
+		"In": "",
+		"Out": {
+			"globalInfo": {
+				"args": "string",
+				"nodes": "map[string]map[cpu:float32 memory:float32]",
+				"vars": "map[string]string"
+			},
+			"installToken": "string",
+			"publicKey": "string"
+		}
+	},
+	{
+		"Type": "Web",
+		"Path": "/contexts",
+		"AuthLevel": 1,
+		"Priority": 0,
+		"Method": "GET",
+		"In": "",
+		"Out": "map[string]string"
+	},
+	{
+		"Type": "Web",
+		"Path": "/global",
+		"AuthLevel": 3,
+		"Priority": 0,
+		"Method": "POST",
+		"In": {
+			"args": "string",
+			"nodes": "map[string]map[cpu:float32 memory:float32]",
+			"vars": "map[string]string"
+		},
+		"Out": {
+			"error": "string",
+			"ok": "bool"
+		}
+	},
+	{
+		"Type": "Web",
+		"Path": "/gateway",
+		"AuthLevel": 1,
+		"Priority": 0,
+		"Method": "GET",
+		"In": "",
+		"Out": {
+			"prefix": "string",
+			"proxies": "map[string]string",
+			"rewrites": "map[string]string"
+		}
+	},
+	{
+		"Type": "Web",
+		"Path": "/gateway",
+		"AuthLevel": 2,
+		"Priority": 0,
+		"Method": "POST",
+		"In": {
+			"prefix": "string",
+			"proxies": "map[string]string",
+			"rewrites": "map[string]string"
+		},
+		"Out": "bool"
+	},
+	{
+		"Type": "Web",
+		"Path": "/{name}",
+		"AuthLevel": 1,
+		"Priority": 0,
+		"Method": "GET",
+		"In": {
+			"name": "string"
+		},
+		"Out": {
+			"apps": "map[string]map[active:bool args:string command:string cpu:float32 max:int memo:string memory:float32 min:int]",
+			"binds": "map[string][]string",
+			"desc": "string",
+			"name": "string",
+			"token": "string",
+			"vars": "map[string]string"
+		}
+	},
+	{
+		"Type": "Web",
+		"Path": "/{name}/status",
+		"AuthLevel": 1,
+		"Priority": 0,
+		"Method": "GET",
+		"In": {
+			"name": "string"
+		},
+		"Out": "map[string][]map[cpu:float32 ctx:string id:string image:string isBind:bool memory:float32 name:string node:string upTime:string]"
+	},
+	{
+		"Type": "Web",
+		"Path": "/{name}",
+		"AuthLevel": 2,
+		"Priority": 0,
+		"Method": "POST",
+		"In": {
+			"apps": "map[string]map[active:bool args:string command:string cpu:float32 max:int memo:string memory:float32 min:int]",
+			"binds": "map[string][]string",
+			"desc": "string",
+			"name": "string",
+			"token": "string",
+			"vars": "map[string]string"
+		},
+		"Out": {
+			"error": "string",
+			"ok": "bool"
+		}
+	},
+	{
+		"Type": "Web",
+		"Path": "/{name}",
+		"AuthLevel": 3,
+		"Priority": 0,
+		"Method": "DELETE",
+		"In": {
+			"name": "string"
+		},
+		"Out": {
+			"error": "string",
+			"ok": "bool"
+		}
+	},
+	{
+		"Type": "Web",
+		"Path": "/install/{token}",
+		"AuthLevel": 9,
+		"Priority": 0,
+		"Method": "GET",
+		"In": "",
+		"Out": "string"
+	}
+]

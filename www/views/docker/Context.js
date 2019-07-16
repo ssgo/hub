@@ -319,7 +319,7 @@ ContextView.prototype.showConfigWindow = function (which, index) {
             data.configRefVars.push({key: v})
         } else if (v === '--network=host') {
             data.configIsHost = true
-        } else {
+        } else if (typeof v !== 'undefined' && v!=='undefined') {
             data.configOthers.push({value: v})
         }
     }

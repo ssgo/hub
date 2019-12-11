@@ -47,9 +47,9 @@ Dockerfile：
 
 ```
 FROM alpine
-ADD zoneinfo/PRC /etc/localtime
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/' /etc/apk/repositories \
-    && apk add openssh-client && rm -f /var/cache/apk/*
+    && apk add openssh-client tzdata && cp -a /usr/share/zoneinfo/PRC /etc/localtime \
+    && apk del tzdata && rm -f /var/cache/apk/*
 ADD dist/ /opt/
 ENTRYPOINT /opt/server
 HEALTHCHECK --interval=10s --timeout=3s CMD /opt/server check

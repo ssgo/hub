@@ -1,6 +1,0 @@
-{
-  "listen": ":8888",
-  "noLogGets": true,
-  "httpVersion": 1,
-  "logOutputFields": "ok,error"
-}

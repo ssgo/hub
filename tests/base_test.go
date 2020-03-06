@@ -20,9 +20,12 @@ var ctx dock.ContextInfo
 var ctxRuns map[string][]dock.AppStatus
 
 func TestStart(tt *testing.T) {
-	_ = os.Setenv("dock_dataPath", "/tmp/dock")
+	_ = os.Setenv("hub_dataPath", "/tmp/dock")
 	_ = os.Setenv("service_httpVersion", "2")
 	config.ResetConfigEnv()
+	//dockerNameFilter := regexp.MustCompile("[^a-zA-Z0-9]")
+	//aa := dockerNameFilter.ReplaceAllString("ssgo/gateway:0.4.7", "")
+	//tt.Fatal(aa)
 
 	_ = os.RemoveAll("/tmp/dock")
 	_ = os.MkdirAll("/tmp/dock", 0700)

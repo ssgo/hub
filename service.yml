@@ -1,0 +1,4 @@
+listen: ":8888"
+nologgets: true
+httpversion: 1
+logoutputfields: "ok,error"

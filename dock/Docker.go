@@ -68,14 +68,16 @@ func startApp(ctxName, appName, nodeName string, app *AppInfo) (string, string, 
 	}
 
 	// 生成 docker --name
-	var dockerRunName string
-	a = strings.SplitN(appName, "/", 2)
-	if strings.IndexByte(a[0], '.') != -1 && len(a) > 1 {
-		dockerRunName = a[1]
-	} else {
-		dockerRunName = a[0]
-	}
+	//var dockerRunName string
+	//a = strings.SplitN(appName, "/", 2)
+	//if strings.IndexByte(a[0], '.') != -1 && len(a) > 1 {
+	//	dockerRunName = a[1]
+	//} else {
+	//	dockerRunName = a[0]
+	//}
+	dockerRunName := appName
 	dockerRunName = dockerNameFilter.ReplaceAllString(dockerRunName, "")
+	logInfo("aaaaa+________", "appName", appName, "dockerRunName", dockerRunName)
 	if postfix != "" {
 		dockerRunName += "-" + postfix
 	}

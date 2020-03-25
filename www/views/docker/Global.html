@@ -81,14 +81,83 @@
         <span if="!data.editMode">{data.args}</span>
     </div>
 
+    <h3 class="sub-header">Registry<span class="text-muted" style="font-size:14px;margin-left:10px">run a simple registry on local, will use 80 port when domain not set port</span>
+    </h3>
+    <div class="table-responsive">
+        <table class="table table-condensed table-hover">
+            <tbody>
+            <tr>
+                <td>Image</td>
+                <td>
+                    <input if="data.editMode" type="text" class="form-control" placeholder="Value" bind="data.registry.image"
+                           onBind="$this.setData({changed: true})">
+                    <span class="text-muted" if="!data.editMode">{data.registry.image}</span>
+                </td>
+            </tr>
+            <tr>
+                <td>Domain</td>
+                <td>
+                    <input if="data.editMode" type="text" class="form-control" placeholder="Value" bind="data.registry.domain"
+                           onBind="$this.setData({changed: true})">
+                    <span class="text-muted" if="!data.editMode">{data.registry.domain}</span>
+                </td>
+            </tr>
+            <tr>
+                <td>Registry Data Path</td>
+                <td>
+                    <input if="data.editMode" type="text" class="form-control" placeholder="Value" bind="data.registry.dataPath"
+                           onBind="$this.setData({changed: true})">
+                    <span class="text-muted" if="!data.editMode">{data.registry.dataPath}</span>
+                </td>
+            </tr>
+            <tr>
+                <td>Hub Data Path</td>
+                <td>
+                    <input if="data.editMode" type="text" class="form-control" placeholder="Value" bind="data.registry.hubDataPath"
+                           onBind="$this.setData({changed: true})">
+                    <span class="text-muted" if="!data.editMode">{data.registry.hubDataPath}</span>
+                </td>
+            </tr>
+            <!--tr>
+                <td>Status</td>
+                <td class="text-info">{data.registryStatus}</td>
+            </tr>
+            <tr>
+                <td>Start</td>
+                <td>
+                    <input if="data.editMode" type="checkbox" class="form-control" bind="data.registry.start"
+                           onBind="$this.setData({changed: true})">
+                    <span class="text-muted" if="!data.editMode">{data.registry.start}</span>
+                </td>
+            </tr-->
+            </tbody>
+        </table>
+        <em style="color: #ec6141; cursor: pointer;margin-left: 10px"
+            onclick="document.execCommand('copy')"
+            onmouseover="var range=document.createRange();range.selectNode(this);window.getSelection().addRange(range);"
+            onmouseout="window.getSelection().empty();"
+            title="click to copy">{data.registryRunCommand}</em>
+        <br/>
+        <span class="glyphicon glyphicon-hand-up" style="margin-left: 10px;margin-bottom: 10px"></span> <span>Click to copy for run registry</span>
+        <br/>
+        <em style="color: #ec6141; cursor: pointer;margin-left: 10px"
+            onclick="document.execCommand('copy')"
+            onmouseover="var range=document.createRange();range.selectNode(this);window.getSelection().addRange(range);"
+            onmouseout="window.getSelection().empty();"
+            title="click to copy">docker login -u {data.registry.user} -p {data.registry.password} {data.registry.domain}</em>
+        <span class="glyphicon glyphicon-hand-left"></span> <span>Click to copy for push image to registry</span>
+    </div>
+
     <h3 class="sub-header" style="margin-top: 20px">Node Installer<span class="text-muted" style="font-size:14px;margin-left:10px">copy command and run in node by root user</span>
     </h3>
     <div style="padding:5px">
-        <em style="color: #ec6141; cursor: pointer;"
+        <br/>
+        <em style="color: #ec6141; cursor: pointer;margin-left: 10px"
             onclick="document.execCommand('copy')"
             onmouseover="var range=document.createRange();range.selectNode(this);window.getSelection().addRange(range);"
             onmouseout="window.getSelection().empty();"
             title="click to copy">curl {data.protocol}//{data.host}/install/{data.installToken} | sh</em>
+        <span class="glyphicon glyphicon-hand-left"></span> <span>Click to copy for set new node</span>
     </div>
 
     <!--h3 class="sub-header" style="color: #999">Manual Install<span class="text-muted" style="font-size:14px;margin-left:10px;color: #aaa">add the public key to node's /home/docker/.ssh/authorized_keys</span>
@@ -96,11 +165,4 @@
     <div style="padding:5px">
         <textarea style="width:100%;height:160px;color: #aaa" readonly>{data.publicKey}</textarea>
     </div-->
-
-    <div align="center">
-        <br/>
-        <button if="data.editMode" class="btn btn-danger" onclick="$this.remove();">Remove</button>
-        <br/>
-    </div>
-
 </div>

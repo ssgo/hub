@@ -1,6 +1,7 @@
 package dock
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -9,6 +10,7 @@ import (
 var nodeFailedTimes = map[string]int{}
 var dockerNameFilter *regexp.Regexp
 var dockerVarReplacer *regexp.Regexp
+var dockerVarReplacer2 *regexp.Regexp
 
 func getRunningApps(nodeName string) ([]*AppStatus, error) {
 	runs := make([]*AppStatus, 0)
@@ -52,11 +54,38 @@ func startApp(ctxName, appName, nodeName string, app *AppInfo) (string, string, 
 		return "", "", nil
 	}
 
+	// 检查镜像是否存在
+	if app.Active {
+		shellOut, usedTime, err := shellFunc(60000, nodeName, "images", "--format", "{{.Repository}}:{{.Tag}}")
+		logger.Info("start", "out", shellOut, "tm", usedTime, "err", err)
+		if err != nil {
+			logger.Error("failed to get images: "+err.Error(), "node", nodeName, "image", appName, "usedTime", usedTime, "out", shellOut)
+			return "", "", err
+		}
+		found := false
+		for _, image := range strings.Split(shellOut, "\n") {
+			if image == appName {
+				found = true
+			}
+		}
+		if found == false && !strings.HasPrefix(appName, globalRegistry.Domain) {
+			logger.Error("can't found image in local", "node", nodeName, "image", appName, "usedTime", usedTime, "out", shellOut)
+			return "", "", errors.New("can't found image in node "+nodeName)
+		}
+
+		if strings.HasPrefix(appName, globalRegistry.Domain) && !found {
+			// 执行 docker login
+			shellOut, usedTime, err := shellFunc(60000, nodeName, "login", "-u", globalRegistry.User, "-p", globalRegistry.Password, globalRegistry.Domain)
+			logger.Info("docker login", "node", nodeName, "image", appName, "usedTime", usedTime, "out", shellOut, "err", err)
+		}
+	}
+
 	if dockerNameFilter == nil {
 		dockerNameFilter = regexp.MustCompile("[^a-zA-Z0-9]")
 	}
 	if dockerVarReplacer == nil {
 		dockerVarReplacer = regexp.MustCompile("\\${[a-zA-Z0-9._-]+}")
+		dockerVarReplacer2 = regexp.MustCompile("{\\$[a-zA-Z0-9._-]+}")
 	}
 
 	// 解析后缀
@@ -110,7 +139,18 @@ func startApp(ctxName, appName, nodeName string, app *AppInfo) (string, string, 
 		}
 		return *s
 	})
-
+	if strings.Contains(tmpArgs, "{$") {
+		tmpArgs = dockerVarReplacer2.ReplaceAllStringFunc(tmpArgs, func(varName string) string {
+			s := ctx.Vars[varName[2:len(varName)-1]]
+			if s == nil {
+				s = globalVars[varName[2:len(varName)-1]]
+				if s == nil {
+					return ""
+				}
+			}
+			return *s
+		})
+	}
 	//// 解析启动参数
 	//runCmd := ""
 	//if strings.HasSuffix(tmpArgs, ">") {
@@ -288,3 +328,72 @@ func PraseCommandArgs(cmd string) []string {
 	}
 	return args
 }
+
+//func GetSimpleRegistryStatus() string {
+//	if globalRegistry.Domain == "" || globalRegistry.Image == "" {
+//		return ""
+//	}
+//
+//	outs, err := u.RunCommand("docker", "ps", "--format", "{{.ID}},{{.Names}},{{.Image}},{{.Status}}")
+//	if err != nil {
+//		logger.Error("check registry error: " + err.Error())
+//		return ""
+//	}
+//
+//	status := ""
+//	for _, line := range outs {
+//		a1 := strings.Split(line, ",")
+//		if len(a1) >= 4 {
+//			if a1[1] == "registry" {
+//				status = a1[3]
+//			}
+//		}
+//	}
+//
+//	return status
+//}
+
+//func CheckSimpleRegistry() string {
+//	if globalRegistry.Domain == "" || globalRegistry.Image == "" {
+//		return ""
+//	}
+//
+//	status := GetSimpleRegistryStatus()
+//
+//	if globalRegistry.Start && status == "" {
+//		portConfig := "80:5000"
+//		if strings.Contains(globalRegistry.Domain, ":") {
+//			portConfig = strings.Split(globalRegistry.Domain, ":")[1] + ":5000"
+//		}
+//		args := []string{"run", "--name", "registry", "-d", "--restart=always",
+//			"-p", portConfig, "-e", "REGISTRY_STORAGE_DELETE_ENABLED=true",
+//			"-v", dataPath("registryAuth")+":/root/registryAuth", "-e", "REGISTRY_AUTH=htpasswd",
+//			"-e", "REGISTRY_AUTH_HTPASSWD_PATH=/root/registryAuth", "-e", "REGISTRY_AUTH_HTPASSWD_REALM=Registry",
+//			"-v", globalRegistry.DataPath + ":/var/lib/registry", globalRegistry.Image}
+//
+//		_, _ = u.RunCommand("docker", "rm", "registry")
+//		outs, err := u.RunCommand("docker", args...)
+//		if err != nil {
+//			logger.Error("start registry error: "+err.Error(), "args", args, "outs", outs)
+//			return ""
+//		} else {
+//			logger.Info("start registry ok", "args", args, "outs", outs)
+//			return ""
+//		}
+//	} else if !globalRegistry.Start && status != "" {
+//		outs1, err := u.RunCommand("docker", "stop", "registry")
+//		var outs2 []string
+//		if err == nil {
+//			outs2, err = u.RunCommand("docker", "rm", "registry")
+//		}
+//		if err != nil {
+//			logger.Error("stop registry error: "+err.Error(), "outs1", outs1, "outs2", outs2)
+//			return ""
+//		} else {
+//			logger.Info("stop registry ok", "outs1", outs1, "outs2", outs2)
+//			return ""
+//		}
+//	}
+//
+//	return status
+//}

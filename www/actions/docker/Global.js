@@ -9,7 +9,8 @@ var GlobalAction = {
     'getStatus': function (ctx) {
         ctx.http.get('/global/status').then(function (data) {
             ctx.states.set({
-                nodeStatus: data.nodes
+                nodeStatus: data.nodes,
+                // registryStatus: data.registryStatus
             })
             ctx.resolve()
         }).catch(ctx.reject)

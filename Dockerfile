@@ -1,5 +1,5 @@
 FROM alpine:latest
-ADD dist /opt
+ADD ./dist /opt
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/' /etc/apk/repositories \
   && apk add tzdata openssh-client && rm -f /var/cache/apk/* \
   && cp -f /usr/share/zoneinfo/PRC /etc/localtime

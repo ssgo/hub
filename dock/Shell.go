@@ -31,7 +31,7 @@ func defaultShell(timeout time.Duration, nodeName string, args ...string) (strin
 	//	sshArgs = append(sshArgs, "-i", "/opt/privateKey", "-o", "StrictHostKeyChecking=no")
 	//}
 	sshArgs = append(sshArgs, "-i", dataPath(".ssh", "id_ecdsa"), "-o", "StrictHostKeyChecking=no")
-	sshArgs = append(sshArgs, "docker@"+sshHost, "-p", sshPort, "docker "+strings.Join(args, " "))
+	sshArgs = append(sshArgs, hubConfig.DockerUser+"@"+sshHost, "-p", sshPort, hubConfig.DockerCommand+" "+strings.Join(args, " "))
 	//sshArgs = append(sshArgs, args...)
 	cmd := exec.Command("ssh", sshArgs...)
 	var bytes, errorBytes []byte

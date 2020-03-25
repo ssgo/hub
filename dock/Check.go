@@ -140,7 +140,6 @@ func checkContext(ctxName string) (bool, bool, error) {
 }
 
 func checkAppForStart(ctxName, appName string) (bool, bool, error) {
-
 	changed := false
 	ctx := ctxs[ctxName]
 	runsByApp := ctxRuns[ctxName]
@@ -232,7 +231,7 @@ func checkAppForStart(ctxName, appName string) (bool, bool, error) {
 					oldAppNamePrefix = appName[0:pos]
 				}
 				for oldAppName := range runsByApp {
-					if oldAppName != appName && strings.HasPrefix(oldAppName, oldAppNamePrefix) && ctx.Binds[oldAppName] != nil && len(ctx.Binds[oldAppName]) > 0{
+					if oldAppName != appName && strings.HasPrefix(oldAppName, oldAppNamePrefix) && ctx.Binds[oldAppName] != nil && len(ctx.Binds[oldAppName]) > 0 {
 						if strings.Join(ctx.Binds[oldAppName], ",") == strings.Join(ctx.Binds[appName], ",") {
 							_, _ = checkAppForStop(ctxName, oldAppName)
 						}

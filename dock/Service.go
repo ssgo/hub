@@ -89,31 +89,50 @@ func login(request *http.Request) int {
 }
 
 type GlobalInfo struct {
-	Nodes map[string]*NodeInfo
-	Vars  map[string]*string
-	Args  string
+	Nodes    map[string]*NodeInfo
+	Vars     map[string]*string
+	Args     string
+	Registry SimpleRegistryInfo
 }
 
 func getGlobalInfo() (out struct {
 	GlobalInfo
-	PublicKey    string
-	InstallToken string
+	PublicKey          string
+	InstallToken       string
+	RegistryRunCommand string
 }) {
 	out.Nodes = nodesSafely.Load().(map[string]*NodeInfo)
 	out.Vars = globalVars
 	out.Args = globalArgs
+	out.Registry = globalRegistry
 	out.PublicKey, _ = u.ReadFile(dataPath(".ssh", "id_ecdsa.pub"), 2048)
 	out.InstallToken = installToken
+	if globalRegistry.Domain != "" {
+		portConfig := "80:5000"
+		if strings.Contains(globalRegistry.Domain, ":") {
+			portConfig = strings.Split(globalRegistry.Domain, ":")[1] + ":5000"
+		}
+		out.RegistryRunCommand = fmt.Sprintln("docker run --name registry -d --restart=always -p", portConfig, "-e REGISTRY_STORAGE_DELETE_ENABLED=true -v", globalRegistry.HubDataPath+"/registryAuth:/root/registryAuth -e REGISTRY_AUTH=htpasswd -e REGISTRY_AUTH_HTPASSWD_PATH=/root/registryAuth -e REGISTRY_AUTH_HTPASSWD_REALM=Registry -v", globalRegistry.DataPath + ":/var/lib/registry", globalRegistry.Image)
+	}
 	return
 }
 
 type globalStatusResult struct {
-	Nodes map[string]*NodeStatus
+	Nodes          map[string]*NodeStatus
+	RegistryStatus string
 }
 
 func getNodeInstaller() string {
 	publicKey, _ := u.ReadFile(dataPath(".ssh", "id_ecdsa.pub"), 2048)
 	publicKey = strings.TrimSpace(publicKey)
+	registrySetting := ""
+	if globalRegistry.Domain != "" {
+		registrySetting = `echo "# setting docker ..."
+echo '{"insecure-registries":["` + globalRegistry.Domain + `"]}' > /etc/docker/daemon.json
+systemctl restart docker
+`
+	}
+
 	return `
 echo "# creating doker user ..."
 useradd docker -g docker
@@ -129,6 +148,7 @@ fi
 \$SSH_ORIGINAL_COMMAND
 EOF
 
+` + registrySetting + `
 echo "# installing ssh key ..."
 mkdir /home/docker/.ssh
 echo 'command="/home/docker/limit-docker",no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty ` + publicKey + `' > /home/docker/.ssh/authorized_keys
@@ -143,7 +163,8 @@ echo "# done"
 
 func getGlobalStatus() globalStatusResult {
 	return globalStatusResult{
-		Nodes: nodeStatusSafely.Load().(map[string]*NodeStatus),
+		Nodes:          nodeStatusSafely.Load().(map[string]*NodeStatus),
+		//RegistryStatus: GetSimpleRegistryStatus(),
 	}
 }
 
@@ -229,6 +250,13 @@ func setGlobalInfo(in GlobalInfo) SetResult {
 
 		globalVars = in.Vars
 		globalArgs = in.Args
+		globalRegistry.Image = in.Registry.Image
+		globalRegistry.Domain = in.Registry.Domain
+		globalRegistry.DataPath = in.Registry.DataPath
+		globalRegistry.HubDataPath = in.Registry.HubDataPath
+		//globalRegistry.Start = in.Registry.Start
+		in.Registry.User = globalRegistry.User
+		in.Registry.Password = globalRegistry.Password
 	}
 	makingLocker.Unlock()
 

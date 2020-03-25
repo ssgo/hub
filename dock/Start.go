@@ -6,6 +6,7 @@ import (
 	"github.com/ssgo/config"
 	"github.com/ssgo/log"
 	"github.com/ssgo/u"
+	"golang.org/x/crypto/bcrypt"
 	"io/ioutil"
 	"os"
 	"os/signal"
@@ -19,7 +20,9 @@ var hubConfig = struct {
 	DataPath      string
 	//LogFile       string
 	//AccessToken string
-	ManageToken string
+	ManageToken   string
+	DockerUser    string
+	DockerCommand string
 	//PrivateKey  string
 }{}
 
@@ -70,6 +73,12 @@ func initConfig() {
 	}
 	if hubConfig.DataPath == "" {
 		hubConfig.DataPath = "/opt/data"
+	}
+	if hubConfig.DockerUser == "" {
+		hubConfig.DockerUser = "docker"
+	}
+	if hubConfig.DockerCommand == "" {
+		hubConfig.DockerCommand = "docker"
 	}
 	//if hubConfig.PrivateKey != "" {
 	//	f, err := os.OpenFile("/opt/privateKey", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
@@ -124,6 +133,24 @@ func Start() {
 
 	global := GlobalInfo{}
 	load("global", &global)
+	if global.Registry.User == "" {
+		global.Registry.Image = "registry"
+		global.Registry.DataPath = "/opt/registry"
+		global.Registry.HubDataPath = "/opt/hub"
+		global.Registry.User = "hub"
+		global.Registry.Password = u.ShortUniqueId()
+		globalRegistry.Image = global.Registry.Image
+		globalRegistry.DataPath = global.Registry.DataPath
+		globalRegistry.HubDataPath = global.Registry.HubDataPath
+		globalRegistry.User = global.Registry.User
+		globalRegistry.Password = global.Registry.Password
+		save("global", global)
+
+		// 生成 htpasswd
+		passwordBytes, _ := bcrypt.GenerateFromPassword([]byte(global.Registry.Password), bcrypt.DefaultCost)
+		u.WriteFile(dataPath("registryAuth"), global.Registry.User+":"+string(passwordBytes)+"\n")
+		logger.Info("create auth file for simple registry", "file", dataPath("registryAuth"))
+	}
 	if len(global.Nodes) == 0 && len(global.Vars) == 0 && global.Args == "" {
 		// 兼容之前的 nodes 存储
 		load("nodes", &global.Nodes)
@@ -131,6 +158,7 @@ func Start() {
 	nodes = global.Nodes
 	globalVars = global.Vars
 	globalArgs = global.Args
+	globalRegistry = global.Registry
 	nodeStatus = make(map[string]*NodeStatus)
 
 	files, err := ioutil.ReadDir(hubConfig.DataPath)
@@ -235,6 +263,12 @@ func Start() {
 		}
 
 		makingLocker.Unlock()
+		if !isRunning {
+			break
+		}
+
+		// 检查 registry
+		//CheckSimpleRegistry()
 
 		if !isRunning {
 			break

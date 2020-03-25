@@ -60,8 +60,10 @@ GlobalView.prototype.setGlobalData = function (data) {
             _nodes: _nodes,
             _vars: _vars,
             args: data.args,
+            registry: data.registry,
             publicKey: data.publicKey,
             installToken: data.installToken,
+            registryRunCommand: data.registryRunCommand,
         })
     }
 }
@@ -93,6 +95,10 @@ GlobalView.prototype.onRefreshStatus = function () {
             tpl.refresh(this.$('.' + 'totalRuns_' + k), {item: node})
         }
     }
+    // if (this.data.registryStatus != states.state.registryStatus) {
+    //     this.setData({registryStatus: states.state.registryStatus})
+    //     // this.data.registryStatus = states.state.registryStatus
+    // }
 }
 
 GlobalView.prototype.save = function () {
@@ -121,7 +127,7 @@ GlobalView.prototype.save = function () {
     }
 
     var that = this
-    actions.call('global.save', {nodes: nodes, vars: vars, args: this.data.args}).then(function () {
+    actions.call('global.save', {nodes: nodes, vars: vars, args: this.data.args, registry:this.data.registry}).then(function () {
         that.setData({changed: false})
         that.onShow()
     }).catch(function (reason) {

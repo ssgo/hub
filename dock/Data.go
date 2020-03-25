@@ -53,8 +53,19 @@ type AppStatus struct {
 	IsBind bool
 }
 
+type SimpleRegistryInfo struct {
+	Image    string
+	Domain   string
+	DataPath string
+	HubDataPath string
+	User     string
+	Password string
+	//Start    bool
+}
+
 var globalVars map[string]*string
 var globalArgs string
+var globalRegistry SimpleRegistryInfo
 
 var nodes = map[string]*NodeInfo{}
 var nodeStatus = map[string]*NodeStatus{}

@@ -232,6 +232,12 @@ ContextView.prototype.check = function (event, type, idx) {
 
         // tpl.refresh(event.target.parentElement.parentElement, {index: idx, item: list[idx]})
     }
+
+    if (type === 'apps' && list[idx].name !== '' && !list[idx].max && !list[idx].min) {
+        list[idx].max = '1'
+        list[idx].min = '1'
+    }
+
     if (idx === list.length - 1) {
         list.push({})
         this.refreshView()
@@ -319,7 +325,7 @@ ContextView.prototype.showConfigWindow = function (which, index) {
             data.configRefVars.push({key: v})
         } else if (v === '--network=host') {
             data.configIsHost = true
-        } else if (typeof v !== 'undefined' && v!=='undefined') {
+        } else if (typeof v !== 'undefined' && v !== 'undefined') {
             data.configOthers.push({value: v})
         }
     }

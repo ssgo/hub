@@ -64,13 +64,13 @@ func startApp(ctxName, appName, nodeName string, app *AppInfo) (string, string, 
 		}
 		found := false
 		for _, image := range strings.Split(shellOut, "\n") {
-			if image == appName {
+			if image == appName || strings.ReplaceAll(image, ":latest", "") == appName {
 				found = true
 			}
 		}
 		if found == false && !strings.HasPrefix(appName, globalRegistry.Domain) {
 			logger.Error("can't found image in local", "node", nodeName, "image", appName, "usedTime", usedTime, "out", shellOut)
-			return "", "", errors.New("can't found image in node "+nodeName)
+			return "", "", errors.New("can't found image in node " + nodeName)
 		}
 
 		if strings.HasPrefix(appName, globalRegistry.Domain) && !found {

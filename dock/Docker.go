@@ -174,6 +174,15 @@ func startApp(ctxName, appName, nodeName string, app *AppInfo) (string, string, 
 			continue
 		}
 
+		// 确保带空格的参数带上引号
+		if strings.Contains(arg, " ") && arg[0] != '"' {
+			if !strings.Contains(arg, "\"") {
+				arg = "\"" + arg + "\""
+			} else {
+				arg = "\"" + strings.ReplaceAll(arg, "\"", "\\\"") + "\""
+			}
+		}
+
 		args = append(args, arg)
 	}
 
@@ -182,6 +191,7 @@ func startApp(ctxName, appName, nodeName string, app *AppInfo) (string, string, 
 	if app.Command != "" {
 		args = append(args, PraseCommandArgs(app.Command)...)
 	}
+	logger.Info("+++++ run", "args", args)
 	//log.Print("Dock	exec	run	[", ctxName, "]	\033[32mdocker ", strings.Join(args, " "), "\033[0m")
 	shellOut, usedTime, err := shellFunc(60000, nodeName, args...)
 	if err != nil {

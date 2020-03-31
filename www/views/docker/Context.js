@@ -168,6 +168,7 @@ ContextView.prototype.save = function () {
     }
 
     var that = this
+    that.setData({saving: true})
     actions.call('context.save', {
         name: this.name.trim(),
         desc: this.data.desc,
@@ -177,12 +178,14 @@ ContextView.prototype.save = function () {
         binds: binds
     }).then(function (result) {
         if (result.ok) {
-            that.setData({changed: false})
+            that.setData({changed: false, saving: false})
             that.onShow()
         } else {
+            that.setData({saving: false})
             alert('Save context has failed, ' + result.error)
         }
     }).catch(function (reason) {
+        that.setData({saving: false})
         alert('Save context has error: ' + reason)
     })
 }

@@ -21,6 +21,11 @@
     <script src="views/gateway/Config.js?v=__TAG__"></script>
     <script src="views/gateway/Gateway.js?v=__TAG__"></script>
     <script src="index.js?ver=__TAG__"></script>
+    <script>
+        if (location.search.indexOf('_=') === -1) {
+            location.replace(location.pathname+(location.search ? location.search+'&' : '?') + '_=' + Math.ceil(Math.random() * 1000000))
+        }
+    </script>
     <style>
         body{
             overflow: hidden;

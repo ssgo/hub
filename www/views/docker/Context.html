@@ -1,5 +1,5 @@
 <div if="data.authLevel>=2" class="saveBox">
-	<button if="data.changed" class="btn btn-primary" onclick="$this.save();">Save</button>
+	<button if="data.changed" class="btn btn-{data.saving?'block':'primary'}" onclick="$this.save();">{data.saving?'Saving':'Save'}</button>
 </div>
 
 <div class="fullBox">

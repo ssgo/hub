@@ -137,28 +137,42 @@ systemctl restart docker
 echo "# creating doker user ..."
 useradd docker -g docker
 
-echo "# installing limit-docker ..."
-cat > /home/docker/limit-docker << EOF
-cmdarr=(\$SSH_ORIGINAL_COMMAND)
-cmd=\${cmdarr[0]}
-if [ \$cmd != "docker" ];then
-    echo "\$cmd is not allow"
-    exit
-fi
-\$SSH_ORIGINAL_COMMAND
-EOF
-
 ` + registrySetting + `
 echo "# installing ssh key ..."
 mkdir /home/docker/.ssh
-echo 'command="/home/docker/limit-docker",no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty ` + publicKey + `' > /home/docker/.ssh/authorized_keys
+echo '` + publicKey + `' > /home/docker/.ssh/authorized_keys
 chmod 500 /home/docker/.ssh
 chmod 400 /home/docker/.ssh/authorized_keys
 chown -R docker:docker /home/docker/.ssh
-chmod +x /home/docker/limit-docker
 
 echo "# done"
 `
+//	return `
+//echo "# creating doker user ..."
+//useradd docker -g docker
+//
+//echo "# installing limit-docker ..."
+//cat > /home/docker/limit-docker << EOF
+//cmdarr=(\$SSH_ORIGINAL_COMMAND)
+//cmd=\${cmdarr[0]}
+//if [ \$cmd != "docker" ];then
+//    echo "\$cmd is not allow"
+//    exit
+//fi
+//\$SSH_ORIGINAL_COMMAND
+//EOF
+//
+//` + registrySetting + `
+//echo "# installing ssh key ..."
+//mkdir /home/docker/.ssh
+//echo 'command="/home/docker/limit-docker",no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty ` + publicKey + `' > /home/docker/.ssh/authorized_keys
+//chmod 500 /home/docker/.ssh
+//chmod 400 /home/docker/.ssh/authorized_keys
+//chown -R docker:docker /home/docker/.ssh
+//chmod +x /home/docker/limit-docker
+//
+//echo "# done"
+//`
 }
 
 func getGlobalStatus() globalStatusResult {

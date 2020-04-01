@@ -7,7 +7,7 @@ ssgo/hub是容器与配置管理中心，使用hub可以轻松实现容器部署
 然后运行：
 
 ```shell
-docker run -d --network=host --restart=always --name hub -v /opt/hub:/opt/data ssgo/hub
+docker run -d --network=host --restart=always --name hub -v /opt/hub:/opt/data ssgo/hub:0.6.8
 ```
 
 容器运行起来之后就可以使用hub了。docker run使用 -e 'hub_manageToken=xxxx' 可以给hub提供登录密码，如果没有设置默认密码为91hub。
@@ -100,7 +100,7 @@ hub管理中心通过ssh连接到docker应用容器部署的宿主机，需要�
 在hub的Docker > global 菜单下，复制Node Installer下命令到目标宿主机，执行命令：
 
 ```shell
-curl http://hubHost:8888/install/eqWTGOckcbi | sh
+curl http://hubHost:8888/install/****** | sh
 ```
 
 目标机安装了公钥以后，hub容器就可以操作目标机中的容器。

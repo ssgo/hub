@@ -118,6 +118,22 @@
                     <span class="text-muted" if="!data.editMode">{data.registry.hubDataPath}</span>
                 </td>
             </tr>
+            <tr>
+                <td>User</td>
+                <td>
+                    <input if="data.editMode" type="text" class="form-control" placeholder="Value" bind="data.registry.user"
+                           onBind="$this.setData({changed: true})">
+                    <span class="text-muted" if="!data.editMode">{data.registry.user}</span>
+                </td>
+            </tr>
+            <tr>
+                <td>Password</td>
+                <td>
+                    <input if="data.editMode" type="text" class="form-control" placeholder="Value" bind="data.registry.password"
+                           onBind="$this.setData({changed: true})">
+                    <span class="text-muted" if="!data.editMode">{data.registry.password}</span>
+                </td>
+            </tr>
             <!--tr>
                 <td>Status</td>
                 <td class="text-info">{data.registryStatus}</td>

@@ -7,7 +7,7 @@ ssgo/hub是容器与配置管理中心，使用hub可以轻松实现容器部署
 然后运行：
 
 ```shell
-docker run -d --network=host --restart=always --name hub -v /opt/hub:/opt/data ssgo/hub:0.6.8
+docker run -d --network=host --restart=always --name hub -v /opt/hub:/opt/data ssgo/hub:0.6.9
 ```
 
 容器运行起来之后就可以使用hub了。docker run使用 -e 'hub_manageToken=xxxx' 可以给hub提供登录密码，如果没有设置默认密码为91hub。

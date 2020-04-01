@@ -268,9 +268,11 @@ func setGlobalInfo(in GlobalInfo) SetResult {
 		globalRegistry.Domain = in.Registry.Domain
 		globalRegistry.DataPath = in.Registry.DataPath
 		globalRegistry.HubDataPath = in.Registry.HubDataPath
+		globalRegistry.User = in.Registry.User
+		globalRegistry.Password = in.Registry.Password
 		//globalRegistry.Start = in.Registry.Start
-		in.Registry.User = globalRegistry.User
-		in.Registry.Password = globalRegistry.Password
+		//in.Registry.User = globalRegistry.User
+		//in.Registry.Password = globalRegistry.Password
 	}
 	makingLocker.Unlock()
 

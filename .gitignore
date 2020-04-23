@@ -1,8 +1,7 @@
 .*
 /env.*
 /dist
-/build
+/build*
 /beta
 /data
-/buildimg
 go.sum

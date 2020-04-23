@@ -106,7 +106,7 @@ func startApp(ctxName, appName, nodeName string, app *AppInfo) (string, string, 
 	//}
 	dockerRunName := appName
 	dockerRunName = dockerNameFilter.ReplaceAllString(dockerRunName, "")
-	logInfo("aaaaa+________", "appName", appName, "dockerRunName", dockerRunName)
+	//logInfo("aaaaa+________", "appName", appName, "dockerRunName", dockerRunName)
 	if postfix != "" {
 		dockerRunName += "-" + postfix
 	}
@@ -126,6 +126,18 @@ func startApp(ctxName, appName, nodeName string, app *AppInfo) (string, string, 
 	} else if app.Memory > 0.01 {
 		args = append(args, "-m", fmt.Sprintf("%.0fm", app.Memory*1024))
 	}
+
+	// 添加默认环境变量 DOCKER_IMAGE_NAME、DOCKER_IMAGE_TAG
+	a2 := strings.Split(appName, "/")
+	a3 := strings.Split(a2[len(a2)-1], ":")
+	a2[len(a2)-1] = a3[0]
+	dockerImageTag := "latest"
+	if len(a3) > 1 {
+		dockerImageTag = a3[1]
+		dockerImageTag = strings.SplitN(dockerImageTag, "#", 2)[0]
+	}
+	dockerImageName := strings.Join(a2, "/")
+	args = append(args, "-e", "DOCKER_IMAGE_NAME="+dockerImageName, "-e", "DOCKER_IMAGE_TAG="+dockerImageTag)
 
 	// 替换变量
 	tmpArgs := app.Args

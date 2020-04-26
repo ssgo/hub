@@ -261,3 +261,4 @@ func TestEnd(tt *testing.T) {
 	as.Stop()
 	dock.AsyncStop()
 }
+

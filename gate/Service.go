@@ -6,68 +6,70 @@ import (
 	"github.com/ssgo/redis"
 	"github.com/ssgo/s"
 	"github.com/ssgo/u"
+	"strings"
 )
-
-type gateConfig struct {
-	Proxies  map[string]string
-	Rewrites map[string]string
-	Prefix   string
-}
 
 var logger = log.New(u.ShortUniqueId())
 
 func Registers() {
 	s.SetAuthChecker(dock.Auth)
-	s.Restful(1, "GET", "/gateway", getGatewayInfo)
-	s.Restful(2, "POST", "/gateway", setGatewayInfo)
+	s.Restful(1, "GET", "/gateway", getGateway)
+	s.Restful(2, "POST", "/gateway", setGateway)
 }
 
-func getPrefix() string {
+type GatewayInfo struct {
+	Key   string
+	Field string
+	Value string
+}
+
+func getGateway() (out struct{ Configs []GatewayInfo }) {
 	redisPool := redis.GetRedis(dock.GetDiscover(), logger)
 	proxyKeys := redisPool.KEYS("_*proxies")
-	if len(proxyKeys) < 1 {
-		return "_"
-	}
-	proxiesKey := proxyKeys[0]
-	lenProxiesKey := len(proxiesKey)
-	if lenProxiesKey <= 7 {
-		return "_"
-	}
-	prefix := proxiesKey[0 : lenProxiesKey-7]
-	return prefix
-}
+	proxyKeys = append(proxyKeys, redisPool.KEYS("_*rewrites")...)
 
-func getGatewayInfo() (gatewayConfig gateConfig) {
-	redisPool := redis.GetRedis(dock.GetDiscover(), logger)
-	prefix := getPrefix()
-	gatewayConfig.Proxies = redisPool.Do("HGETALL", prefix+"proxies").StringMap()
-	gatewayConfig.Rewrites = redisPool.Do("HGETALL", prefix+"rewrites").StringMap()
-	gatewayConfig.Prefix = prefix
+	out.Configs = make([]GatewayInfo, 0)
+	for _, key := range proxyKeys {
+		list := redisPool.Do("HGETALL", key).StringMap()
+		for field, value := range list {
+			out.Configs = append(out.Configs, GatewayInfo{
+				Key:   key,
+				Field: field,
+				Value: value,
+			})
+		}
+	}
 	return
 }
 
-func setGatewayInfo(gatewayConfig gateConfig) bool {
-	prefix := getPrefix()
-	newProxies := gatewayConfig.Proxies
-	newRewrites := gatewayConfig.Rewrites
+func setGateway(in struct{ Configs []GatewayInfo }) bool {
 	redisPool := redis.GetRedis(dock.GetDiscover(), logger)
-	return saveMulti(prefix, "proxies", newProxies, redisPool) && saveMulti(prefix, "rewrites", newRewrites, redisPool)
-}
 
-func saveMulti(prefix string, key string, newList map[string]string, redisPool *redis.Redis) bool {
-	oldList := redisPool.Do("HGETALL", prefix+key).StringMap()
-	currentKey := prefix + key
-	for index, single := range newList {
-		if !redisPool.HSET(currentKey, index, single) {
-			return false
+	datas := make(map[string]map[string]string)
+	dataChangeds := make(map[string]bool)
+	for _, data := range in.Configs {
+		if !strings.HasPrefix(data.Key, "_") || (!strings.HasSuffix(data.Key, "proxies") && !strings.HasSuffix(data.Key, "rewrites")) {
+			continue
+		}
+		if datas[data.Key] == nil {
+			datas[data.Key] = redisPool.Do("HGETALL", data.Key).StringMap()
+		}
+		if datas[data.Key][data.Field] != data.Value {
+			redisPool.HSET(data.Key, data.Field, data.Value)
+			dataChangeds[data.Key] = true
+		}
+		delete(datas[data.Key], data.Field)
+	}
+
+	for key, data := range datas {
+		for field, _ := range data {
+			redisPool.HDEL(key, field)
+			dataChangeds[key] = true
 		}
 	}
-	for index, _ := range oldList {
-		_, ok := newList[index]
-		if !ok {
-			redisPool.HDEL(currentKey, index)
-		}
+
+	for k := range dataChangeds {
+		redisPool.Do("PUBLISH", "_CH"+k, 1)
 	}
-	redisPool.Do("PUBLISH", "_CH"+currentKey, 1)
 	return true
 }
